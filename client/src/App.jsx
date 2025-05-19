@@ -1,20 +1,32 @@
 import styled from "@emotion/styled"
-import {Route, Routes, Navigate} from "react-router-dom";
-
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Register from './pages/Register';
+import Home from './components/Home';
+import VerifyEmail from './components/VerifyEmail';
+import Login from "./pages/Login.jsx"
+import AuthProvider from "./context/authContext.jsx";
+import backgroundImage from "./assets/background.jpg"
 function App() {
     const GlobalStyle = styled.div`
         box-sizing: border-box;
-        background-color: #0A0E14;
+        background-image: url(${backgroundImage});
+        background-size: cover;
         height: 100vh;
     `
     return (
-        <>
-            <GlobalStyle>
-                <Routes>
-                    {/*<Route path="/" element={<Navigate to="/home" replace/>}/>*/}
-                </Routes>
-            </GlobalStyle>
-        </>
+        <Router>
+            <AuthProvider>
+                <GlobalStyle>
+                    <Routes>
+                        <Route path="/login" element={<Login/>}/>
+                        <Route path="/" element={<Home />} />
+                        <Route path="/register" element={<Register />} />
+                        <Route path="/verify-email" element={<VerifyEmail />} />
+                        {/* Add other routes here */}
+                    </Routes>
+                </GlobalStyle>
+            </AuthProvider>
+        </Router>
     )
 }
 
