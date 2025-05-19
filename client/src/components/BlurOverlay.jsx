@@ -1,7 +1,7 @@
 import styled from "@emotion/styled";
 
 const Blur = styled.div`
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(18px);
     width: 100%;
     height: 100%;
     box-sizing: border-box;

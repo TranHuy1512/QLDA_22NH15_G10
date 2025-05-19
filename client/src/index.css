@@ -4,10 +4,12 @@
 @tailwind utilities;
 
 @font-face {
-  font-family: 'Fira Sans';
-  src: url('./assets/fonts/FiraSans-Hair.otf') format('otf');
-  font-weight: 200;
-  font-style: normal;
+  font-family: 'Fira Sans Light';
+  src: url('./assets/fonts/fira-sans/FiraSans-Light.otf') format('opentype');
+}
+@font-face {
+  font-family: 'Lato Light';
+  src: url('./assets/fonts/lato/Lato-Light.ttf') format('truetype');
 }
 body{
   margin: 0;

@@ -92,8 +92,6 @@ const Register = () => {
     } catch (error) {
       console.error('Registration error:', error);
       if (error.response) {
-        // The request was made and the server responded with a status code
-        // that falls out of the range of 2xx
         console.error('Error response:', error.response.data);
         if (error.response.data.errors && Array.isArray(error.response.data.errors)) {
           // Join all error messages with newlines
@@ -122,7 +120,7 @@ const Register = () => {
           <form onSubmit={handleSubmit}>
             <Title style={{ fontWeight: 200 }}>REGISTER</Title>
 
-            <Label>name</Label>
+            <Label>Name</Label>
             <Input
               type="text"
               name="name"

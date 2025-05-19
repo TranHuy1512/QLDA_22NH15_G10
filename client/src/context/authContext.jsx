@@ -28,7 +28,7 @@ const AuthProvider = ({ children }) => {
             setError(null);
         } catch (err) {
             console.error('Verify user error:', err);
-            setError(err.response?.data?.message || 'Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.');
+            setError(err.response?.data?.message || 'Session expired. Please login again!');
             logout();
         } finally {
             setLoading(false);
@@ -54,13 +54,12 @@ const AuthProvider = ({ children }) => {
             navigate('/');
         } catch (err) {
             console.error('Login error:', err);
-            const message = err.response?.data?.message || 'Đăng nhập thất bại. Vui lòng thử lại.';
+            const message = err.response?.data?.message || 'Login failed. Please try again!';
             setError(message);
             throw err;
         }
     };
 
-    // Hàm đăng xuất
     const logout = useCallback(() => {
         setUser(null);
         setToken('');
@@ -74,6 +73,7 @@ const AuthProvider = ({ children }) => {
         user,
         token,
         error,
+        setError,
         loading,
         login,
         logout,

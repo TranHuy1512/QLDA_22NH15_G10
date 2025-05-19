@@ -2,22 +2,21 @@ import {useState} from "react";
 import {useAuth} from '../context/authContext.jsx'
 import BlurOverlay from "../components/BlurOverlay.jsx";
 import {ErrorMessage, FormContainer, FormWrapper, Input, Label, Title, Button, StyledLink} from "../components/FormComponents";
-import {Link, useNavigate} from "react-router-dom";
+import {Link} from "react-router-dom";
 
 function Login() {
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
-    const {login, error} = useAuth()
-    const navigate = useNavigate()
-
+    const {login, error, setError} = useAuth()
     const handleSubmit = async (e) => {
+        setError('');
         e.preventDefault();
         login({email: email, password: password})
     };
 
     return (
         <BlurOverlay>
-            <FormContainer style={{fontWeight: 200}}>
+            <FormContainer>
                 <FormWrapper>
                     <form onSubmit={handleSubmit}>
                         <Title style={{fontWeight: 200}}>LOGIN</Title>
