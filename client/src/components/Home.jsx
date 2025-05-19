@@ -1,6 +1,10 @@
 import { Link } from 'react-router-dom';
+import { Button } from './FormComponents';
+import { useAuth } from '../context/authContext.jsx';
 
 const Home = () => {
+  const { logout } = useAuth();
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="max-w-md w-full space-y-8 text-center">
@@ -23,6 +27,7 @@ const Home = () => {
           >
             Login
           </Link>
+          <Button onClick={logout}>Logout</Button>
         </div>
       </div>
     </div>

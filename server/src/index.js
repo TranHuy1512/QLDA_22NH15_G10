@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const { register, verifyEmail, login} = require('./controllers/authController');
 const { registerValidation } = require('./middleware/validators');
+const router = require('./routes/auth');
 
 const app = express();
 
@@ -16,6 +17,8 @@ app.use(cors({
 app.use(express.json());
 
 // Routes
+app.use('/api', router);
+
 app.post('/api/register', registerValidation, register);
 app.get('/api/verify-email', verifyEmail);
 app.post('/api/login', login)
