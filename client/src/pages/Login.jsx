@@ -1,0 +1,45 @@
+import React from 'react';
+import {useState} from "react";
+import BlurOverlay from "../components/BlurOverlay.jsx";
+import {ErrorMessage, FormContainer, FormWrapper, Input, Label, Title, Button, StyledLink} from "../components/FormComponents";
+import {Link} from "react-router-dom";
+
+function Login() {
+    const [email, setEmail] = useState("")
+    const [password, setPassword] = useState("")
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        //handle here
+    };
+
+    return (
+        <BlurOverlay>
+            <FormContainer style={{fontWeight: 200}}>
+                <FormWrapper>
+                    <form onSubmit={handleSubmit}>
+                        <Title style={{fontWeight: 200}}>LOGIN</Title>
+                        <Label>Email</Label>
+                        <Input type="text"
+                               value={email}
+                               onChange={(e) => setEmail(e.target.value)}
+                               placeholder="Enter your email"
+                        />
+                        <Label>Password</Label>
+                        <Input
+                            type="password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            placeholder="Enter your password"
+                        />
+                        <Button type="submit" style={{fontWeight: 200}}>Login</Button>
+                        <StyledLink>
+                            Don&#39;t have an account? <Link to="/register">Register here</Link>
+                        </StyledLink>
+                    </form>
+                </FormWrapper>
+            </FormContainer>
+        </BlurOverlay>
+    );
+}
+
+export default Login;
