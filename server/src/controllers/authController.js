@@ -26,6 +26,12 @@ const register = async (req, res) => {
     // Generate verification token
     const verificationToken = crypto.randomBytes(32).toString('hex');
     const verificationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    
+    console.log('Generated verification details:', {
+      token: verificationToken,
+      expires: verificationTokenExpires,
+      currentTime: new Date()
+    });
 
     // Create new user
     const user = new User({
@@ -36,8 +42,22 @@ const register = async (req, res) => {
       verificationTokenExpires
     });
 
+    // Log user object before saving
+    console.log('User object before saving:', {
+      email: user.email,
+      verificationToken: user.verificationToken,
+      verificationTokenExpires: user.verificationTokenExpires
+    });
+
     await user.save();
-    console.log('User saved successfully:', { email, verificationToken });
+
+    // Verify the saved user
+    const savedUser = await User.findOne({ email });
+    console.log('Saved user details:', {
+      email: savedUser.email,
+      verificationToken: savedUser.verificationToken,
+      verificationTokenExpires: savedUser.verificationTokenExpires
+    });
 
     // Send verification email
     const emailSent = await sendVerificationEmail(email, verificationToken);
@@ -52,6 +72,7 @@ const register = async (req, res) => {
     });
   } catch (error) {
     console.error('Registration error:', error);
+    console.error('Error stack:', error.stack);
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -67,13 +88,27 @@ const verifyEmail = async (req, res) => {
     }
 
     console.log('Looking for user with token:', token);
+    console.log('Current time:', new Date().toISOString());
+    
     const user = await User.findOne({
       verificationToken: token,
       verificationTokenExpires: { $gt: Date.now() }
     });
 
     if (!user) {
-      console.log('No user found with this token or token expired');
+      // Log more details about why the user wasn't found
+      const userWithToken = await User.findOne({ verificationToken: token });
+      if (userWithToken) {
+        console.log('Found user with token but token expired:', {
+          email: userWithToken.email,
+          tokenExpires: userWithToken.verificationTokenExpires,
+          currentTime: new Date(),
+          isExpired: userWithToken.verificationTokenExpires < new Date()
+        });
+      } else {
+        console.log('No user found with this token');
+      }
+      
       return res.status(400).json({ 
         message: 'Invalid or expired verification token. Please request a new verification email.' 
       });
@@ -83,7 +118,8 @@ const verifyEmail = async (req, res) => {
       email: user.email,
       isVerified: user.isVerified,
       verificationToken: user.verificationToken,
-      verificationTokenExpires: user.verificationTokenExpires
+      verificationTokenExpires: user.verificationTokenExpires,
+      currentTime: new Date()
     });
 
     // Use the verifyEmail method
@@ -94,10 +130,8 @@ const verifyEmail = async (req, res) => {
       isVerified: user.isVerified
     });
 
-    res.json({ 
-      success: true,
-      message: 'Email verified successfully. You can now log in.' 
-    });
+    // Redirect to login page
+    res.redirect(`${process.env.FRONTEND_URL}/login?verified=true`);
   } catch (error) {
     console.error('Email verification error:', error);
     console.error('Error stack:', error.stack);

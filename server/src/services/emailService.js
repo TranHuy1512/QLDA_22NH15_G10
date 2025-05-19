@@ -22,7 +22,7 @@ const sendVerificationEmail = async (email, verificationToken) => {
   console.log('Preparing to send verification email to:', email);
   console.log('Verification token:', verificationToken);
   
-  const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}`;
+  const verificationUrl = `${process.env.API_URL}/api/verify-email?token=${verificationToken}`;
   console.log('Verification URL:', verificationUrl);
   
   const mailOptions = {
@@ -34,6 +34,7 @@ const sendVerificationEmail = async (email, verificationToken) => {
       <p>Please click the link below to verify your email address:</p>
       <a href="${verificationUrl}">${verificationUrl}</a>
       <p>This link will expire in 24 hours.</p>
+      <p>After verification, you will be redirected to the login page.</p>
     `
   };
 
