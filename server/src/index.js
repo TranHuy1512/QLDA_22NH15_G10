@@ -2,14 +2,14 @@ require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const { register, verifyEmail } = require('./controllers/authController');
+const { register, verifyEmail, login} = require('./controllers/authController');
 const { registerValidation } = require('./middleware/validators');
 
 const app = express();
 
 // Middleware
 app.use(cors({
-  origin: '*', // Cho phép tất cả các domain truy cập
+  origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
@@ -18,6 +18,7 @@ app.use(express.json());
 // Routes
 app.post('/api/register', registerValidation, register);
 app.get('/api/verify-email', verifyEmail);
+app.post('/api/login', login)
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI)

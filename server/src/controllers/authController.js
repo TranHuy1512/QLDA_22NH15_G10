@@ -1,5 +1,6 @@
 const { validationResult } = require('express-validator');
 const crypto = require('crypto');
+const jwt = require('jsonwebtoken')
 const User = require('../models/User');
 const { sendVerificationEmail } = require('../services/emailService');
 
@@ -9,7 +10,7 @@ const register = async (req, res) => {
     
     // Validate request
     const errors = validationResult(req);
-    if (!errors.isEmpty()) {
+    if (!errors.isEmpty()){
       console.log('Validation errors:', errors.array());
       return res.status(400).json({ errors: errors.array() });
     }
@@ -104,7 +105,68 @@ const verifyEmail = async (req, res) => {
   }
 };
 
+const login = async (req, res) => {
+  try {
+    console.log('Login request body:', req.body);
+
+    // Validate request
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      console.log('Validation errors:', errors.array());
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { email, password } = req.body;
+
+    // Check if user exists
+    const user = await User.findOne({ email });
+    if (!user) {
+      console.log('User not found:', email);
+      return res.status(401).json({ message: 'Invalid email or password' });
+    }
+
+    // Check if email is verified
+    if (!user.isVerified) {
+      console.log('Email not verified:', email);
+      return res.status(403).json({
+        message: 'Please verify your email before logging in'
+      });
+    }
+
+    // Check password
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) {
+      console.log('Invalid password for:', email);
+      return res.status(401).json({ message: 'Invalid email or password' });
+    }
+
+    // Generate JWT
+    const token = jwt.sign(
+        { userId: user._id, email: user.email },
+        process.env.JWT_SECRET,
+        { expiresIn: '1h' }
+    );
+
+    console.log('Login successful:', { email, token });
+
+    res.json({
+      success: true,
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email
+      }
+    });
+  } catch (error) {
+    console.error('Login error:', error);
+    console.error('Error stack:', error.stack);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
 module.exports = {
   register,
-  verifyEmail
+  verifyEmail,
+  login
 }; 
