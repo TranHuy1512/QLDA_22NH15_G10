@@ -3,37 +3,27 @@ const crypto = require('crypto');
 const jwt = require('jsonwebtoken')
 const User = require('../models/User');
 const { sendVerificationEmail } = require('../services/emailService');
+const PasswordResetToken = require('../models/PasswordResetToken');
+const nodemailer = require('nodemailer');
+const bcrypt = require('bcryptjs');
 
 const register = async (req, res) => {
   try {
-    console.log('Registration request body:', req.body);
-    
-    // Validate request
     const errors = validationResult(req);
     if (!errors.isEmpty()){
-      console.log('Validation errors:', errors.array());
       return res.status(400).json({ errors: errors.array() });
     }
 
     const { name, email, password } = req.body;
     
-    // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: 'User already exists' });
     }
 
-    // Generate verification token
     const verificationToken = crypto.randomBytes(32).toString('hex');
     const verificationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-    
-    console.log('Generated verification details:', {
-      token: verificationToken,
-      expires: verificationTokenExpires,
-      currentTime: new Date()
-    });
 
-    // Create new user
     const user = new User({
       name,
       email,
@@ -42,27 +32,10 @@ const register = async (req, res) => {
       verificationTokenExpires
     });
 
-    // Log user object before saving
-    console.log('User object before saving:', {
-      email: user.email,
-      verificationToken: user.verificationToken,
-      verificationTokenExpires: user.verificationTokenExpires
-    });
-
     await user.save();
 
-    // Verify the saved user
-    const savedUser = await User.findOne({ email });
-    console.log('Saved user details:', {
-      email: savedUser.email,
-      verificationToken: savedUser.verificationToken,
-      verificationTokenExpires: savedUser.verificationTokenExpires
-    });
-
-    // Send verification email
     const emailSent = await sendVerificationEmail(email, verificationToken);
     if (!emailSent) {
-      console.error('Failed to send verification email');
       return res.status(500).json({ message: 'Error sending verification email' });
     }
 
@@ -71,24 +44,17 @@ const register = async (req, res) => {
       message: 'Registration successful. Please check your email to verify your account.'
     });
   } catch (error) {
-    console.error('Registration error:', error);
-    console.error('Error stack:', error.stack);
     res.status(500).json({ message: 'Server error' });
   }
 };
 
 const verifyEmail = async (req, res) => {
   try {
-    console.log('Verification request query:', req.query);
     const { token } = req.query;
 
     if (!token) {
-      console.log('No token provided');
       return res.status(400).json({ message: 'Verification token is required' });
     }
-
-    console.log('Looking for user with token:', token);
-    console.log('Current time:', new Date().toISOString());
     
     const user = await User.findOne({
       verificationToken: token,
@@ -96,92 +62,48 @@ const verifyEmail = async (req, res) => {
     });
 
     if (!user) {
-      // Log more details about why the user wasn't found
-      const userWithToken = await User.findOne({ verificationToken: token });
-      if (userWithToken) {
-        console.log('Found user with token but token expired:', {
-          email: userWithToken.email,
-          tokenExpires: userWithToken.verificationTokenExpires,
-          currentTime: new Date(),
-          isExpired: userWithToken.verificationTokenExpires < new Date()
-        });
-      } else {
-        console.log('No user found with this token');
-      }
-      
       return res.status(400).json({ 
         message: 'Invalid or expired verification token. Please request a new verification email.' 
       });
     }
 
-    console.log('Found user:', {
-      email: user.email,
-      isVerified: user.isVerified,
-      verificationToken: user.verificationToken,
-      verificationTokenExpires: user.verificationTokenExpires,
-      currentTime: new Date()
-    });
-
-    // Use the verifyEmail method
     await user.verifyEmail();
-    
-    console.log('User verified successfully:', {
-      email: user.email,
-      isVerified: user.isVerified
-    });
-
-    // Redirect to login page
     res.redirect(`${process.env.FRONTEND_URL}/login?verified=true`);
   } catch (error) {
-    console.error('Email verification error:', error);
-    console.error('Error stack:', error.stack);
     res.status(500).json({ message: 'Server error' });
   }
 };
 
 const login = async (req, res) => {
   try {
-    console.log('Login request body:', req.body);
-
-    // Validate request
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      console.log('Validation errors:', errors.array());
       return res.status(400).json({ errors: errors.array() });
     }
 
     const { email, password } = req.body;
 
-    // Check if user exists
     const user = await User.findOne({ email });
     if (!user) {
-      console.log('User not found:', email);
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
-    // Check if email is verified
     if (!user.isVerified) {
-      console.log('Email not verified:', email);
       return res.status(403).json({
         message: 'Please verify your email before logging in'
       });
     }
 
-    // Check password
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
-      console.log('Invalid password for:', email);
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
-    // Generate JWT
     const token = jwt.sign(
         { userId: user._id, email: user.email },
         process.env.JWT_SECRET,
         { expiresIn: '1h' }
     );
-
-    console.log('Login successful:', { email, token });
 
     res.json({
       success: true,
@@ -193,31 +115,135 @@ const login = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Login error:', error);
-    console.error('Error stack:', error.stack);
     res.status(500).json({ message: 'Server error' });
+  }
+};
+
+const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+    try {
+      await PasswordResetToken.create({
+        userId: user._id,
+        token,
+        expiry
+      });
+    } catch (dbError) {
+      throw new Error('Failed to save reset token');
+    }
+
+    try {
+      const transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST,
+        port: process.env.SMTP_PORT,
+        secure: true,
+        auth: {
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASS
+        }
+      });
+
+      const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
+
+      await transporter.sendMail({
+        from: process.env.SMTP_FROM,
+        to: user.email,
+        subject: 'Password Reset Request',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #333;">Password Reset Request</h2>
+            <p>You requested a password reset for your account.</p>
+            <p>Click the button below to reset your password:</p>
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${resetLink}" 
+                 style="background-color: #4CAF50; 
+                        color: white; 
+                        padding: 12px 24px; 
+                        text-decoration: none; 
+                        border-radius: 4px;
+                        display: inline-block;">
+                Reset Password
+              </a>
+            </div>
+            <p>Or copy and paste this link into your browser:</p>
+            <p style="word-break: break-all; color: #666;">${resetLink}</p>
+            <p style="color: #666; font-size: 0.9em;">This link will expire in 24 hours.</p>
+            <hr style="border: 1px solid #eee; margin: 20px 0;">
+            <p style="color: #666; font-size: 0.8em;">
+              If you didn't request this password reset, please ignore this email or contact support if you have concerns.
+            </p>
+          </div>
+        `
+      });
+    } catch (emailError) {
+      throw new Error('Failed to send reset email');
+    }
+
+    res.json({ message: 'Password reset email sent' });
+  } catch (error) {
+    res.status(500).json({ 
+      message: 'Error processing password reset request',
+      error: error.message 
+    });
+  }
+};
+
+const resetPassword = async (req, res) => {
+  try {
+    const { token, password } = req.body;
+
+    const resetToken = await PasswordResetToken.findOne({
+      token,
+      expiry: { $gt: Date.now() }
+    });
+
+    if (!resetToken) {
+      return res.status(400).json({ message: 'Invalid or expired reset token' });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    await User.findByIdAndUpdate(resetToken.userId, {
+      password: hashedPassword
+    });
+
+    await PasswordResetToken.deleteOne({ _id: resetToken._id });
+
+    res.json({ message: 'Password reset successful' });
+  } catch (error) {
+    res.status(500).json({ message: 'Error resetting password' });
   }
 };
 
 const getUserProfile = async (req, res) => {
   try {
-    const userId = req.user.userId; // Assuming you have middleware to set req.user
-    const user = await User.findById(userId).select('-password -verificationToken -verificationTokenExpires');
-    console.log('User profile request:', user);
+    const user = await User.findById(req.user.userId).select('-password');
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
-
     res.json(user);
   } catch (error) {
-    console.error('Get user profile error:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: 'Error fetching user profile' });
   }
-}
+};
 
 module.exports = {
   register,
   verifyEmail,
   login,
+  forgotPassword,
+  resetPassword,
   getUserProfile
 }; 
