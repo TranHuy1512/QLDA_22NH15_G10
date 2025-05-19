@@ -19,11 +19,7 @@ transporter.verify(function(error, success) {
 });
 
 const sendVerificationEmail = async (email, verificationToken) => {
-  console.log('Preparing to send verification email to:', email);
-  console.log('Verification token:', verificationToken);
-  
-  const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}`;
-  console.log('Verification URL:', verificationUrl);
+  const verificationUrl = `${process.env.API_URL}/api/verify-email?token=${verificationToken}`;
   
   const mailOptions = {
     from: process.env.EMAIL_USER,
@@ -34,26 +30,14 @@ const sendVerificationEmail = async (email, verificationToken) => {
       <p>Please click the link below to verify your email address:</p>
       <a href="${verificationUrl}">${verificationUrl}</a>
       <p>This link will expire in 24 hours.</p>
+      <p>After verification, you will be redirected to the login page.</p>
     `
   };
 
   try {
-    console.log('Sending email with options:', {
-      from: mailOptions.from,
-      to: mailOptions.to,
-      subject: mailOptions.subject
-    });
-    
-    const info = await transporter.sendMail(mailOptions);
-    console.log('Email sent successfully:', info.response);
+    await transporter.sendMail(mailOptions);
     return true;
   } catch (error) {
-    console.error('Error sending verification email:', error);
-    console.error('Error details:', {
-      message: error.message,
-      code: error.code,
-      command: error.command
-    });
     return false;
   }
 };

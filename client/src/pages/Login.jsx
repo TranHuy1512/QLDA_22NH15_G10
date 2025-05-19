@@ -2,12 +2,14 @@ import {useState} from "react";
 import {useAuth} from '../context/authContext.jsx'
 import BlurOverlay from "../components/BlurOverlay.jsx";
 import {ErrorMessage, FormContainer, FormWrapper, Input, Label, Title, Button, StyledLink} from "../components/FormComponents";
-import {Link} from "react-router-dom";
+import {Link, useNavigate} from "react-router-dom";
 
 function Login() {
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
     const {login, error} = useAuth()
+    const navigate = useNavigate()
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         login({email: email, password: password})
@@ -36,6 +38,9 @@ function Login() {
                         <Button type="submit" style={{fontWeight: 200}}>Login</Button>
                         <StyledLink>
                             Don&#39;t have an account? <Link to="/register">Register here</Link>
+                        </StyledLink>
+                        <StyledLink>
+                            <Link to="/forgot-password">Forgot Password?</Link>
                         </StyledLink>
                     </form>
                 </FormWrapper>

@@ -2,26 +2,46 @@ require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const { register, verifyEmail, login} = require('./controllers/authController');
-const { registerValidation } = require('./middleware/validators');
 const router = require('./routes/auth');
 
 const app = express();
 
 // Middleware
 app.use(cors({
-  origin: '*',
+  origin: ['http://localhost:5173', 'http://192.168.1.95:5173'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
 }));
+
+// Parse JSON bodies BEFORE debug logging
 app.use(express.json());
 
-// Routes
+// Debug middleware
+app.use((req, res, next) => {
+  console.log('Incoming request:', {
+    method: req.method,
+    url: req.url,
+    headers: req.headers,
+    body: req.body
+  });
+  next();
+});
+
+// Routes - Mount auth routes at /api
 app.use('/api', router);
 
-app.post('/api/register', registerValidation, register);
-app.get('/api/verify-email', verifyEmail);
-app.post('/api/login', login)
+// Debug route
+app.get('/debug', (req, res) => {
+  console.log('Debug route hit');
+  res.json({
+    message: 'Debug route working',
+    routes: router.stack.map(r => ({
+      path: r.route?.path,
+      methods: r.route?.methods
+    }))
+  });
+});
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI)
