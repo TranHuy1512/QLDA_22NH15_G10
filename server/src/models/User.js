@@ -24,12 +24,19 @@ const userSchema = new mongoose.Schema({
     default: false
   },
   verificationToken: {
-    type: String
+    type: String,
+    default: null
+  },
+  verificationTokenExpires: {
+    type: Date,
+    default: null
   },
   createdAt: {
     type: Date,
     default: Date.now
   }
+}, {
+  timestamps: true // Thêm timestamps để theo dõi thời gian cập nhật
 });
 
 // Hash password before saving
@@ -48,6 +55,14 @@ userSchema.pre('save', async function(next) {
 // Method to compare password
 userSchema.methods.comparePassword = async function(candidatePassword) {
   return bcrypt.compare(candidatePassword, this.password);
+};
+
+// Method to verify email
+userSchema.methods.verifyEmail = async function() {
+  this.isVerified = true;
+  this.verificationToken = null;
+  this.verificationTokenExpires = null;
+  return this.save();
 };
 
 const User = mongoose.model('User', userSchema);
