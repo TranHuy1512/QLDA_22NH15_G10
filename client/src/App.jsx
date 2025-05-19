@@ -1,5 +1,8 @@
 import styled from "@emotion/styled"
-import {Route, Routes, Navigate} from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Register from './components/Register';
+import Home from './components/Home';
+import VerifyEmail from './components/VerifyEmail';
 
 function App() {
     const GlobalStyle = styled.div`
@@ -8,13 +11,16 @@ function App() {
         height: 100vh;
     `
     return (
-        <>
+        <Router>
             <GlobalStyle>
                 <Routes>
-                    {/*<Route path="/" element={<Navigate to="/home" replace/>}/>*/}
+                    <Route path="/" element={<Home />} />
+                    <Route path="/register" element={<Register />} />
+                    <Route path="/verify-email" element={<VerifyEmail />} />
+                    {/* Add other routes here */}
                 </Routes>
             </GlobalStyle>
-        </>
+        </Router>
     )
 }
 
