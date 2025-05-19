@@ -7,7 +7,8 @@ import VerifyEmail from './components/VerifyEmail';
 function App() {
     const GlobalStyle = styled.div`
         box-sizing: border-box;
-        background-color: #0A0E14;
+        background-image: url(${backgroundImage});
+        background-size: cover;
         height: 100vh;
     `
     return (
