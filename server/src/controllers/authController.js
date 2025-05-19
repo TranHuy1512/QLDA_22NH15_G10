@@ -165,8 +165,25 @@ const login = async (req, res) => {
   }
 };
 
+const getUserProfile = async (req, res) => {
+  try {
+    const userId = req.user.userId; // Assuming you have middleware to set req.user
+    const user = await User.findById(userId).select('-password -verificationToken -verificationTokenExpires');
+    console.log('User profile request:', user);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json(user);
+  } catch (error) {
+    console.error('Get user profile error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+}
+
 module.exports = {
   register,
   verifyEmail,
-  login
+  login,
+  getUserProfile
 }; 

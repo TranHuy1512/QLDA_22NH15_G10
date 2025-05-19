@@ -13,26 +13,26 @@ const AuthProvider = ({ children }) => {
     const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
 
     const verifyUser = useCallback(async () => {
-        // if (!token) {
-        //     setLoading(false);
-        //     return;
-        // }
-        //
-        // try {
-        //     const response = await axios.get(`${BACKEND_URL}/api/profile`, {
-        //         headers: {
-        //             Authorization: `Bearer ${token}`,
-        //         },
-        //     });
-        //     setUser(response.data);
-        //     setError(null);
-        // } catch (err) {
-        //     console.error('Verify user error:', err);
-        //     setError(err.response?.data?.message || 'Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.');
-        //     logout();
-        // } finally {
-        //     setLoading(false);
-        // }
+        if (!token) {
+            setLoading(false);
+            return;
+        }
+        
+        try {
+            const response = await axios.get(`${BACKEND_URL}/api/profile`, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+            setUser(response.data);
+            setError(null);
+        } catch (err) {
+            console.error('Verify user error:', err);
+            setError(err.response?.data?.message || 'Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.');
+            logout();
+        } finally {
+            setLoading(false);
+        }
     }, [token]);
 
     useEffect(() => {
