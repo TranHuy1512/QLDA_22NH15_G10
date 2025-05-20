@@ -4,7 +4,7 @@ import TaskPage from './TaskPage';
 import KanbanBoard from './KanbanBoard';
 import CreateTeam from '../components/CreateTeam';
 import TeamsPage from './TeamsPage';
-import axios from 'axios';
+import axiosInstance from '../utils/axios';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -22,7 +22,7 @@ const Dashboard = () => {
 
   const fetchTeams = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/teams');
+      const response = await axiosInstance.get('/api/teams');
       if (response.data.success) {
         const teamsData = response.data.data;
         setTeams(teamsData);

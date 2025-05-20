@@ -5,7 +5,7 @@ const cors = require('cors');
 const router = require('./routes/auth');
 const teamRoutes = require('./routes/teamRoutes');
 const taskRoutes = require('./routes/taskRoutes');
-
+const userRoutes = require('./routes/userRoutes');
 
 const app = express();
 
@@ -35,6 +35,7 @@ app.use((req, res, next) => {
 app.use('/api', router);
 app.use('/api/teams', teamRoutes);
 app.use('/api/tasks', taskRoutes);
+app.use('/api/users', userRoutes);
 
 // Debug route
 app.get('/debug', (req, res) => {

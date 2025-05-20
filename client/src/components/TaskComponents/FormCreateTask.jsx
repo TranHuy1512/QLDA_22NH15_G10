@@ -1,24 +1,69 @@
-import React, { useState } from 'react';
-import axios from 'axios';
+import React, { useState, useEffect } from 'react';
+import axiosInstance from '../../utils/axios';
 
-const FormCreateTask = ({ onClose, onSubmit }) => {
+const FormCreateTask = ({ onClose, onSubmit, initialData }) => {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     status: 'todo',
     priority: 'medium',
-    assignee: 'unassigned',
+    assignees: [],
     dueDate: ''
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [users, setUsers] = useState([]);
+  const [loadingUsers, setLoadingUsers] = useState(true);
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  useEffect(() => {
+    if (initialData) {
+      setFormData({
+        title: initialData.title || '',
+        description: initialData.description || '',
+        status: initialData.status || 'todo',
+        priority: initialData.priority || 'medium',
+        assignees: initialData.assignees || [],
+        dueDate: initialData.dueDate ? new Date(initialData.dueDate).toISOString().slice(0, 16) : ''
+      });
+    }
+  }, [initialData]);
+
+  const fetchUsers = async () => {
+    try {
+      setLoadingUsers(true);
+      const response = await axiosInstance.get('/api/users');
+      if (response.data.success) {
+        setUsers(response.data.data);
+      } else {
+        setError('Failed to fetch users');
+      }
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      setError('Failed to fetch users');
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    if (name === 'assignees') {
+      // Convert the selected options to an array of values
+      const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
+      setFormData(prev => ({
+        ...prev,
+        [name]: selectedOptions
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -27,24 +72,33 @@ const FormCreateTask = ({ onClose, onSubmit }) => {
     setLoading(true);
 
     try {
-      console.log('Submitting task data:', formData); // Log dữ liệu task
-      const response = await axios.post('http://localhost:5000/api/tasks', formData);
-      console.log('Task creation response:', response.data); // Log response
+      console.log('Submitting task data:', formData);
+      let response;
+      
+      if (initialData) {
+        // Update existing task
+        response = await axiosInstance.put(`/api/tasks/${initialData._id}`, formData);
+      } else {
+        // Create new task
+        response = await axiosInstance.post('/api/tasks', formData);
+      }
+      
+      console.log('Task response:', response.data);
       
       if (response.data.success) {
         onSubmit(response.data.data);
         onClose();
       } else {
-        setError(response.data.message || 'Failed to create task');
+        setError(response.data.message || `Failed to ${initialData ? 'update' : 'create'} task`);
       }
     } catch (error) {
-      console.error('Error creating task:', error);
+      console.error('Error with task:', error);
       if (error.response?.data?.message) {
         setError(error.response.data.message);
       } else if (error.response?.status === 400) {
         setError('Please check your input and try again');
       } else {
-        setError('Failed to create task. Please try again later.');
+        setError(`Failed to ${initialData ? 'update' : 'create'} task. Please try again later.`);
       }
     } finally {
       setLoading(false);
@@ -133,7 +187,7 @@ const FormCreateTask = ({ onClose, onSubmit }) => {
             fontSize: '1.5rem',
             fontWeight: '600',
             color: 'white'
-          }}>Create New Task</h2>
+          }}>{initialData ? 'Edit Task' : 'Create New Task'}</h2>
           <button
             onClick={onClose}
             style={{
@@ -144,168 +198,163 @@ const FormCreateTask = ({ onClose, onSubmit }) => {
               fontSize: '1.25rem',
               padding: '0.5rem',
               borderRadius: '0.375rem',
-              transition: 'all 0.2s',
-              ':hover': {
-                backgroundColor: '#374151',
-                color: 'white'
-              }
+              transition: 'all 0.2s'
             }}
           >
             ✕
           </button>
         </div>
-        
+
         <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: '1.5rem' }}>
-            <label style={commonLabelStyles}>
-              Title *
-            </label>
+            <label style={commonLabelStyles}>Title</label>
             <input
               type="text"
               name="title"
               value={formData.title}
               onChange={handleChange}
               required
+              style={commonInputStyles}
               placeholder="Enter task title"
-              style={{
-                ...commonInputStyles,
-                fontSize: '1rem'
-              }}
             />
           </div>
 
           <div style={{ marginBottom: '1.5rem' }}>
-            <label style={commonLabelStyles}>
-              Description (optional)
-            </label>
+            <label style={commonLabelStyles}>Description</label>
             <textarea
               name="description"
               value={formData.description}
               onChange={handleChange}
-              placeholder="Enter task description"
+              required
               style={{
                 ...commonInputStyles,
                 minHeight: '100px',
-                resize: 'vertical',
-                fontSize: '1rem'
+                resize: 'vertical'
               }}
+              placeholder="Enter task description"
             />
           </div>
 
-          <div style={{ 
-            display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
-            gap: '1rem',
-            marginBottom: '1.5rem'
-          }}>
-            <div>
-              <label style={commonLabelStyles}>
-                Status
-              </label>
-              <select
-                name="status"
-                value={formData.status}
-                onChange={handleChange}
-                style={{
-                  ...commonInputStyles,
-                  cursor: 'pointer',
-                  appearance: 'none',
-                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239CA3AF'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-                  backgroundRepeat: 'no-repeat',
-                  backgroundPosition: 'right 0.75rem center',
-                  backgroundSize: '1.25rem',
-                  paddingRight: '2.5rem'
-                }}
-              >
-                <option value="pending">To Do</option>
-                <option value="in-progress">In Progress</option>
-                <option value="completed">Completed</option>
-              </select>
-            </div>
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={commonLabelStyles}>Status</label>
+            <select
+              name="status"
+              value={formData.status}
+              onChange={handleChange}
+              style={{
+                ...commonInputStyles,
+                color: getStatusColor(formData.status)
+              }}
+            >
+              <option value="todo">To Do</option>
+              <option value="in-progress">In Progress</option>
+              <option value="completed">Completed</option>
+            </select>
+          </div>
 
-            <div>
-              <label style={commonLabelStyles}>
-                Priority
-              </label>
-              <select
-                name="priority"
-                value={formData.priority}
-                onChange={handleChange}
-                style={{
-                  ...commonInputStyles,
-                  cursor: 'pointer',
-                  appearance: 'none',
-                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239CA3AF'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-                  backgroundRepeat: 'no-repeat',
-                  backgroundPosition: 'right 0.75rem center',
-                  backgroundSize: '1.25rem',
-                  paddingRight: '2.5rem'
-                }}
-              >
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-              </select>
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={commonLabelStyles}>Priority</label>
+            <select
+              name="priority"
+              value={formData.priority}
+              onChange={handleChange}
+              style={{
+                ...commonInputStyles,
+                color: getPriorityColor(formData.priority)
+              }}
+            >
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+            </select>
+          </div>
+
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={commonLabelStyles}>Assignees (optional)</label>
+            <div style={{
+              maxHeight: '200px',
+              overflowY: 'auto',
+              backgroundColor: '#374151',
+              border: '1px solid #4B5563',
+              borderRadius: '0.375rem',
+              padding: '0.5rem'
+            }}>
+              {loadingUsers ? (
+                <div style={{ color: '#9CA3AF', padding: '0.5rem' }}>Loading users...</div>
+              ) : (
+                users.map(user => (
+                  <label
+                    key={user._id}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      padding: '0.5rem',
+                      cursor: 'pointer',
+                      borderRadius: '0.25rem',
+                      transition: 'background-color 0.2s',
+                      ':hover': {
+                        backgroundColor: '#4B5563'
+                      }
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      value={user._id}
+                      checked={formData.assignees.includes(user._id)}
+                      onChange={(e) => {
+                        const userId = e.target.value;
+                        setFormData(prev => ({
+                          ...prev,
+                          assignees: e.target.checked
+                            ? [...prev.assignees, userId]
+                            : prev.assignees.filter(id => id !== userId)
+                        }));
+                      }}
+                      style={{
+                        marginRight: '0.75rem',
+                        width: '1rem',
+                        height: '1rem',
+                        cursor: 'pointer'
+                      }}
+                    />
+                    <span style={{ color: 'white' }}>
+                      {user.name} ({user.email})
+                    </span>
+                  </label>
+                ))
+              )}
             </div>
           </div>
 
           <div style={{ marginBottom: '1.5rem' }}>
-            <label style={commonLabelStyles}>
-              Assignee (optional)
-            </label>
-            <select
-              name="assignee"
-              value={formData.assignee}
-              onChange={handleChange}
-              style={{
-                ...commonInputStyles,
-                cursor: 'pointer',
-                appearance: 'none',
-                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239CA3AF'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-                backgroundRepeat: 'no-repeat',
-                backgroundPosition: 'right 0.75rem center',
-                backgroundSize: '1.25rem',
-                paddingRight: '2.5rem'
-              }}
-            >
-              <option value="unassigned">Unassigned</option>
-              <option value="user1">User 1</option>
-              <option value="user2">User 2</option>
-            </select>
-          </div>
-
-          <div style={{ marginBottom: '2rem' }}>
-            <label style={commonLabelStyles}>
-              Due Date & Time (optional)
-            </label>
+            <label style={commonLabelStyles}>Due Date</label>
             <input
               type="datetime-local"
               name="dueDate"
               value={formData.dueDate}
               onChange={handleChange}
-              style={{
-                ...commonInputStyles,
-                cursor: 'pointer'
-              }}
+              required
+              style={commonInputStyles}
             />
           </div>
 
-          <div style={{ 
-            display: 'flex', 
-            gap: '1rem', 
+          {error && (
+            <div style={{
+              color: '#EF4444',
+              marginBottom: '1rem',
+              padding: '0.75rem',
+              backgroundColor: 'rgba(239, 68, 68, 0.1)',
+              borderRadius: '0.375rem'
+            }}>
+              {error}
+            </div>
+          )}
+
+          <div style={{
+            display: 'flex',
             justifyContent: 'flex-end',
-            borderTop: '1px solid #374151',
-            paddingTop: '1.5rem'
+            gap: '1rem'
           }}>
-            {error && (
-              <div style={{ 
-                color: '#EF4444', 
-                fontSize: '0.875rem',
-                marginRight: 'auto'
-              }}>
-                {error}
-              </div>
-            )}
             <button
               type="button"
               onClick={onClose}
@@ -316,11 +365,7 @@ const FormCreateTask = ({ onClose, onSubmit }) => {
                 border: 'none',
                 borderRadius: '0.375rem',
                 cursor: 'pointer',
-                transition: 'all 0.2s',
-                fontWeight: '500',
-                ':hover': {
-                  backgroundColor: '#4B5563'
-                }
+                transition: 'all 0.2s'
               }}
             >
               Cancel
@@ -330,19 +375,16 @@ const FormCreateTask = ({ onClose, onSubmit }) => {
               disabled={loading}
               style={{
                 padding: '0.75rem 1.5rem',
-                backgroundColor: loading ? '#6B7280' : '#3B82F6',
+                backgroundColor: '#3B82F6',
                 color: 'white',
                 border: 'none',
                 borderRadius: '0.375rem',
                 cursor: loading ? 'not-allowed' : 'pointer',
-                transition: 'all 0.2s',
-                fontWeight: '500',
-                ':hover': {
-                  backgroundColor: loading ? '#6B7280' : '#2563EB'
-                }
+                opacity: loading ? 0.7 : 1,
+                transition: 'all 0.2s'
               }}
             >
-              {loading ? 'Creating...' : 'Create Task'}
+              {loading ? 'Saving...' : (initialData ? 'Update Task' : 'Create Task')}
             </button>
           </div>
         </form>

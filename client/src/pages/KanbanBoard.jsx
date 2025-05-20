@@ -1,8 +1,6 @@
-import axios from "axios";
+import axiosInstance from "../utils/axios";
 import React from "react";
 import TaskCard from "../components/TaskCard";
-
-const API_URL = import.meta.env.VITE_API_URL;
 
 const KanbanBoard = () => {
   const [tasks, setTasks] = React.useState([]);
@@ -13,7 +11,7 @@ const KanbanBoard = () => {
     const fetchTasks = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`${API_URL}/api/tasks`);
+        const response = await axiosInstance.get('/api/tasks');
         if (response.data.success) {
           setTasks(response.data.data);
         } else {

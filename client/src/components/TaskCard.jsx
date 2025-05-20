@@ -100,6 +100,7 @@ const TaskCard = ({ task, onStatusChange, onEdit, onDelete }) => {
             {task.status === 'completed' ? 'Completed' :
              task.status === 'in-progress' ? 'In Progress' : 'To Do'}
           </button>
+          
           <h3 style={{
             fontSize: '1.125rem',
             fontWeight: '600',
@@ -226,13 +227,34 @@ const TaskCard = ({ task, onStatusChange, onEdit, onDelete }) => {
           </span>
         )}
 
-        {task.assignee && task.assignee !== 'unassigned' && (
-          <span style={{
-            color: '#9CA3AF',
-            fontSize: '0.875rem'
+        {task.assignees && task.assignees.length > 0 && (
+          <div style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: '0.5rem',
+            alignItems: 'center'
           }}>
-            Assigned to: {task.assignee}
-          </span>
+            <span style={{
+              color: '#9CA3AF',
+              fontSize: '0.875rem'
+            }}>
+              Assigned to:
+            </span>
+            {task.assignees.map(assignee => (
+              <span
+                key={assignee._id}
+                style={{
+                  backgroundColor: '#374151',
+                  padding: '0.25rem 0.75rem',
+                  borderRadius: '9999px',
+                  fontSize: '0.75rem',
+                  color: 'white'
+                }}
+              >
+                {assignee.name}
+              </span>
+            ))}
+          </div>
         )}
       </div>
     </div>

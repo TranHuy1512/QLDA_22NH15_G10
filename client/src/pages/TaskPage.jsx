@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styled from '@emotion/styled'
 import {Title, Label, Button} from '../components/TaskComponents/FormComponents.jsx'
-import axios from 'axios';
+import axiosInstance from '../utils/axios';
 import FormCreateTask from '../components/TaskComponents/FormCreateTask.jsx';
 import TaskCard from '../components/TaskCard';
 import EmptyTaskState from "../components/TaskComponents/EmptyTaskState.jsx";
@@ -43,7 +43,7 @@ const TaskPage = () => {
     const fetchTasks = async () => {
         try {
             setLoading(true);
-            const response = await axios.get('http://localhost:5000/api/tasks');
+            const response = await axiosInstance.get('/api/tasks');
 
             if (response.data.success) {
               setTasks(response.data.data);
@@ -75,11 +75,21 @@ const TaskPage = () => {
         setTasks(prev => prev.map(task =>
             task._id === updatedTask._id ? updatedTask : task
         ));
-      setEditingTask(null);
+        setEditingTask(null);
     };
 
-    const handleDeleteTask = (taskId) => {
-        setTasks(prev => prev.filter(task => task._id !== taskId));
+    const handleDeleteTask = async (taskId) => {
+        try {
+            const response = await axiosInstance.delete(`/api/tasks/${taskId}`);
+            if (response.data.success) {
+                setTasks(prev => prev.filter(task => task._id !== taskId));
+            } else {
+                setError('Failed to delete task: ' + response.data.message);
+            }
+        } catch (error) {
+            console.error('Error deleting task:', error);
+            setError(error.response?.data?.message || 'Failed to delete task');
+        }
     };
 
     const handleStatusChange = async (taskId, newStatus) => {
@@ -88,8 +98,8 @@ const TaskPage = () => {
             setTasks(prev => prev.map(task =>
                 task._id === taskId ? { ...task, status: newStatus } : task
             ));
-            // Send update to backend (correct endpoint)
-            await axios.patch(`http://localhost:5000/api/tasks/${taskId}/status`, { status: newStatus });
+            // Send update to backend
+            await axiosInstance.patch(`/api/tasks/${taskId}/status`, { status: newStatus });
         } catch (error) {
             console.error('Error updating status:', error);
             setError(error.response?.data?.message || 'Failed to update status');

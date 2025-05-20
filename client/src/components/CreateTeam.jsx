@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import axiosInstance from '../utils/axios';
 
 const CreateTeam = ({ onClose, onSubmit }) => {
   const [formData, setFormData] = useState({
@@ -50,7 +50,7 @@ const CreateTeam = ({ onClose, onSubmit }) => {
     setLoading(true);
 
     try {
-      const response = await axios.post('http://localhost:5000/api/teams', formData);
+      const response = await axiosInstance.post('/api/teams', formData);
       
       if (response.data.success) {
         onSubmit(response.data.data);

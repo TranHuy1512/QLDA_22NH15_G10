@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-
-const API_URL = import.meta.env.VITE_API_URL;
+import axiosInstance from '../utils/axios';
 
 const TeamsPage = () => {
   const [teams, setTeams] = useState([]);
@@ -23,7 +21,7 @@ const TeamsPage = () => {
   const fetchTeams = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_URL}/api/teams`);
+      const response = await axiosInstance.get('/api/teams');
       if (response.data.success) {
         setTeams(response.data.data);
       } else {
@@ -40,7 +38,7 @@ const TeamsPage = () => {
     e.preventDefault();
     setCreating(true);
     try {
-      const response = await axios.post(`${API_URL}/api/teams`, {
+      const response = await axiosInstance.post('/api/teams', {
         name: teamName,
         description: teamDesc,
       });
@@ -72,8 +70,8 @@ const TeamsPage = () => {
     e.preventDefault();
     setSavingEdit(true);
     try {
-        console.log('Editing team:', editingTeam);
-      const response = await axios.patch(`${API_URL}/api/teams/${editingTeam._id}`, {
+      console.log('Editing team:', editingTeam);
+      const response = await axiosInstance.patch(`/api/teams/${editingTeam._id}`, {
         name: teamName,
         description: teamDesc,
       });
@@ -99,7 +97,7 @@ const TeamsPage = () => {
     setDeletingTeamId(teamId);
     setDeleting(true);
     try {
-      const response = await axios.delete(`${API_URL}/api/teams/${teamId}`);
+      const response = await axiosInstance.delete(`/api/teams/${teamId}`);
       if (response.data.success) {
         setTeams(teams.filter(t => t._id !== teamId));
       } else {
