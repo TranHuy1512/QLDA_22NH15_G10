@@ -21,12 +21,17 @@ const FormCreateTask = ({ onClose, onSubmit, initialData }) => {
 
   useEffect(() => {
     if (initialData) {
+      // Convert assignees array to array of user IDs
+      const assigneeIds = initialData.assignees.map(assignee => 
+        typeof assignee === 'object' ? assignee._id : assignee
+      );
+      
       setFormData({
         title: initialData.title || '',
         description: initialData.description || '',
         status: initialData.status || 'todo',
         priority: initialData.priority || 'medium',
-        assignees: initialData.assignees || [],
+        assignees: assigneeIds,
         dueDate: initialData.dueDate ? new Date(initialData.dueDate).toISOString().slice(0, 16) : ''
       });
     }
