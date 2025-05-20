@@ -64,17 +64,42 @@ const TaskCard = ({ task, onStatusChange, onEdit, onDelete }) => {
         marginBottom: '1rem'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <input
-            type="checkbox"
-            checked={task.status === 'completed'}
-            onChange={() => onStatusChange(task.id, task.status === 'completed' ? 'pending' : 'completed')}
-            style={{
-              width: '1.25rem',
-              height: '1.25rem',
-              cursor: 'pointer',
-              accentColor: '#3B82F6'
+          <button
+            onClick={e => {
+              const nextStatus =
+                task.status === 'todo' ? 'in-progress' :
+                task.status === 'in-progress' ? 'completed' :
+                'todo';
+              onStatusChange(task._id, nextStatus);
             }}
-          />
+            style={{
+              width: 'auto',
+              height: '1.75rem',
+              padding: '0 1rem',
+              borderRadius: '9999px',
+              backgroundColor: getStatusColor(task.status),
+              color: 'white',
+              border: 'none',
+              fontWeight: 600,
+              fontSize: '0.95rem',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              transition: 'box-shadow 0.2s',
+            }}
+            onMouseOver={e => {
+              const color = getStatusColor(task.status);
+              e.currentTarget.style.boxShadow = `0 0 12px 2px ${color}`;
+            }}
+            onMouseOut={e => {
+              e.currentTarget.style.boxShadow = '';
+            }}
+            title="Click to cycle status"
+          >
+            {task.status === 'completed' ? 'Completed' :
+             task.status === 'in-progress' ? 'In Progress' : 'To Do'}
+          </button>
           <h3 style={{
             fontSize: '1.125rem',
             fontWeight: '600',
@@ -140,7 +165,7 @@ const TaskCard = ({ task, onStatusChange, onEdit, onDelete }) => {
               </button>
               <button
                 onClick={() => {
-                  onDelete(task.id);
+                  onDelete(task._id);
                   setShowDropdown(false);
                 }}
                 style={{
@@ -182,18 +207,6 @@ const TaskCard = ({ task, onStatusChange, onEdit, onDelete }) => {
         alignItems: 'center'
       }}>
         <span style={{
-          backgroundColor: getStatusColor(task.status),
-          padding: '0.25rem 0.75rem',
-          borderRadius: '9999px',
-          fontSize: '0.75rem',
-          fontWeight: '500',
-          color: 'white'
-        }}>
-          {task.status === 'completed' ? 'Completed' : 
-           task.status === 'in-progress' ? 'In Progress' : 'To Do'}
-        </span>
-
-        <span style={{
           backgroundColor: getPriorityColor(task.priority),
           padding: '0.25rem 0.75rem',
           borderRadius: '9999px',
@@ -226,4 +239,4 @@ const TaskCard = ({ task, onStatusChange, onEdit, onDelete }) => {
   );
 };
 
-export default TaskCard; 
+export default TaskCard;

@@ -82,21 +82,28 @@ const TaskPage = () => {
         setTasks(prev => prev.filter(task => task._id !== taskId));
     };
 
-    const handleStatusChange = (taskId, newStatus) => {
-        setTasks(prev => prev.map(task =>
-            task._id === taskId ? { ...task, status: newStatus } : task
-        ));
-            if (loading) {
-                return (
-                    <NotificationContainer>
-                        <Title>Loading tasks...</Title>
-                        <Title>Please wait while we fetch your tasks</Title>
-                    </NotificationContainer>
-
-                );
-            }
-
+    const handleStatusChange = async (taskId, newStatus) => {
+        try {
+            // Optimistically update UI
+            setTasks(prev => prev.map(task =>
+                task._id === taskId ? { ...task, status: newStatus } : task
+            ));
+            // Send update to backend (correct endpoint)
+            await axios.patch(`http://localhost:5000/api/tasks/${taskId}/status`, { status: newStatus });
+        } catch (error) {
+            console.error('Error updating status:', error);
+            setError(error.response?.data?.message || 'Failed to update status');
+        }
     };
+
+    if (loading) {
+        return (
+            <NotificationContainer>
+                <Title>Loading tasks...</Title>
+                <Title>Please wait while we fetch your tasks</Title>
+            </NotificationContainer>
+        );
+    }
 
     if (error) {
         return (
@@ -159,3 +166,4 @@ const TaskPage = () => {
 };
 
 export default TaskPage;
+
