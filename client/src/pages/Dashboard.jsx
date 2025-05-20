@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/authContext';
 import TaskPage from './TaskPage';
+import KanbanBoard from './KanbanBoard';
 import CreateTeam from '../components/CreateTeam';
 import axios from 'axios';
 
@@ -75,6 +76,8 @@ const Dashboard = () => {
     switch (activeItem) {
       case 'tasks':
         return <TaskPage />;
+      case 'board':
+        return <KanbanBoard />;
       case 'settings':
         return (
           <div style={{ color: 'white' }}>
@@ -160,6 +163,11 @@ const Dashboard = () => {
           name="Tasks"
           id="tasks"
           icon={<span>📋</span>}
+        />
+        <SidebarItem
+          name="Board"
+          id="board"
+          icon={<span>🗂️</span>}
         />
         <SidebarItem
           name="Settings"
@@ -283,4 +291,4 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard; 
+export default Dashboard;
