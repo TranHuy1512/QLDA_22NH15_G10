@@ -54,4 +54,55 @@ router.post('/', async (req, res) => {
   }
 });
 
-module.exports = router; 
+// PATCH /api/teams/:id - Update a team's name or description (with validation)
+router.patch('/:id', async (req, res) => {
+  try {
+    const { name, description } = req.body;
+    // Only allow updating name and description
+    const update = {};
+    if (typeof name === 'string') update.name = name;
+    if (typeof description === 'string') update.description = description;
+    if (Object.keys(update).length === 0) {
+      return res.status(400).json({ success: false, message: 'No valid fields to update' });
+    }
+    const team = await Team.findByIdAndUpdate(
+      req.params.id,
+      update,
+      { new: true, runValidators: true }
+    );
+    if (!team) {
+      return res.status(404).json({ success: false, message: 'Team not found' });
+    }
+    res.json({ success: true, data: team });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// GET /api/teams/:id - Get a single team by ID
+router.get('/:id', async (req, res) => {
+  try {
+    const team = await Team.findById(req.params.id);
+    if (!team) {
+      return res.status(404).json({ success: false, message: 'Team not found' });
+    }
+    res.json({ success: true, data: team });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// DELETE /api/teams/:id - Delete a team by ID
+router.delete('/:id', async (req, res) => {
+  try {
+    const team = await Team.findByIdAndDelete(req.params.id);
+    if (!team) {
+      return res.status(404).json({ success: false, message: 'Team not found' });
+    }
+    res.json({ success: true, message: 'Team deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+module.exports = router;
