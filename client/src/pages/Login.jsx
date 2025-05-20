@@ -7,10 +7,10 @@ import {Link, useNavigate} from "react-router-dom";
 function Login() {
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
-    const {login, error} = useAuth()
+    const {login, error, setError} = useAuth()
     const navigate = useNavigate()
-
     const handleSubmit = async (e) => {
+        setError('');
         e.preventDefault();
         try {
             // Gọi hàm login và đợi kết quả
@@ -26,7 +26,7 @@ function Login() {
 
     return (
         <BlurOverlay>
-            <FormContainer style={{fontWeight: 200}}>
+            <FormContainer>
                 <FormWrapper>
                     <form onSubmit={handleSubmit}>
                         <Title style={{fontWeight: 200}}>LOGIN</Title>

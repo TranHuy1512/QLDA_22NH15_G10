@@ -1,15 +1,15 @@
 import styled from "@emotion/styled";
 
 export const FormWrapper = styled.div`
+    font-family: 'Lato Light', sans-serif;
     box-sizing: border-box;
     display: flex;
     flex-direction: column;;
     align-items: center;
     width: 400px;
     margin: auto;
-    padding-bottom: 70px;
+    padding-bottom: 40px;
     padding-top: 70px;
-    //border: 2px solid rgba(170, 11, 214, 0.8);
     border-radius: 10px;
     background-color: rgba(0,0,0, 0.4);
     box-shadow: 0 4px 15px 2px rgba(0, 0, 0, 0.5);
@@ -22,6 +22,7 @@ export const FormContainer = styled.div`
     justify-content: center;
 `
 export const Input = styled.input`
+    font-family: 'Lato Light', sans-serif;
     box-sizing: border-box;
     width: 100%;
     padding: 10px;
@@ -38,7 +39,7 @@ export const Input = styled.input`
         opacity: 0.5;
     }
     &:focus {
-        border: 2px solid #aa0bd6;
+        border: 1px solid #51CBC5;
     }
 `;
 export const Label = styled.label`
@@ -49,6 +50,7 @@ export const Label = styled.label`
     margin-top: 10px;
 `;
 export const Button = styled.button`
+    font-family: 'Lato Light', sans-serif;
     width: 100%;
     padding: 10px;
     margin-top: 15px;
@@ -66,11 +68,11 @@ export const Button = styled.button`
     }
 `;
 export const Title = styled.h2`
-    //font-family: 'Fira Sans', sans-serif;
+    font-family: 'Lato Light', sans-serif;
     text-align: center;
     margin: 0;
     color: #fff;
-    font-size: 23px;
+    font-size: 30px;
 `;
 export const ErrorMessage = styled.p`
     text-align: center;
@@ -78,12 +80,12 @@ export const ErrorMessage = styled.p`
     font-size: 1.1rem;
     min-height: 1.4rem;
     margin-bottom: 0;
-    margin-top: 1.5rem;
+    margin-top: 0;
 `
 export const StyledLink = styled.p`
     text-align: center;
     color: #f5f5f5;
-    margin-top: 30px;
+    margin-top: 20px;
     a {
         color: #C466A5;
         text-decoration: none;
