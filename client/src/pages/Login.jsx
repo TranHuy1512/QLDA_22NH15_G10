@@ -12,7 +12,16 @@ function Login() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        login({email: email, password: password})
+        try {
+            // Gọi hàm login và đợi kết quả
+            await login({ email: email, password: password });
+
+            // Chuyển hướng đến trang dashboard sau khi đăng nhập thành công
+            navigate('/dashboard');
+        } catch (err) {
+            // Xử lý lỗi (nếu có)
+            console.error("Login error", err);
+        }
     };
 
     return (

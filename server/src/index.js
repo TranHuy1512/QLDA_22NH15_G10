@@ -3,6 +3,9 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const router = require('./routes/auth');
+const teamRoutes = require('./routes/teamRoutes');
+const taskRoutes = require('./routes/taskRoutes');
+
 
 const app = express();
 
@@ -30,16 +33,20 @@ app.use((req, res, next) => {
 
 // Routes - Mount auth routes at /api
 app.use('/api', router);
+app.use('/api/teams', teamRoutes);
+app.use('/api/tasks', taskRoutes);
 
 // Debug route
 app.get('/debug', (req, res) => {
   console.log('Debug route hit');
   res.json({
     message: 'Debug route working',
-    routes: router.stack.map(r => ({
-      path: r.route?.path,
-      methods: r.route?.methods
-    }))
+    routes: app._router.stack
+      .filter(r => r.route)
+      .map(r => ({
+        path: r.route.path,
+        methods: Object.keys(r.route.methods)
+      }))
   });
 });
 

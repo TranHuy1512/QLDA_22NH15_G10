@@ -6,6 +6,7 @@ import Register from './pages/Register';
 import Home from './components/Home';
 import VerifyEmail from './components/VerifyEmail';
 import Login from "./pages/Login.jsx"
+import Dashboard from "./pages/Dashboard.jsx"
 import AuthProvider from "./context/authContext.jsx";
 import backgroundImage from "./assets/background.jpg"
 import ForgotPassword from './pages/ForgotPassword';
@@ -33,21 +34,21 @@ function App() {
     return (
         <ThemeProvider theme={theme}>
             <CssBaseline />
-            <Router>
-                <AuthProvider>
-                    <GlobalStyle>
-                        <Routes>
-                            <Route path="/login" element={<Login/>}/>
-                            <Route path="/" element={<Home />} />
-                            <Route path="/register" element={<Register />} />
-                            <Route path="/verify-email" element={<VerifyEmail />} />
+        <Router>
+            <AuthProvider>
+                <GlobalStyle>
+                    <Routes>
+                        <Route path="/login" element={<Login/>}/>
+                        <Route path="/" element={<Home />} />
+                        <Route path="/register" element={<Register />} />
+                        <Route path="/verify-email" element={<VerifyEmail />} />
                             <Route path="/forgot-password" element={<ForgotPassword />} />
                             <Route path="/reset-password" element={<ResetPassword />} />
-                            {/* Add other routes here */}
-                        </Routes>
-                    </GlobalStyle>
-                </AuthProvider>
-            </Router>
+                            <Route path="/dashboard" element={<Dashboard />} />
+                    </Routes>
+                </GlobalStyle>
+            </AuthProvider>
+        </Router>
         </ThemeProvider>
     )
 }
