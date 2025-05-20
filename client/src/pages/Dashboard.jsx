@@ -141,7 +141,7 @@ const Dashboard = () => {
       {/* Sidebar */}
       <div style={{
         width: '250px',
-        backgroundColor: '#1F2937',
+        backgroundColor: '#0A0E14',
         padding: '1.5rem',
         borderRight: '1px solid #374151',
         display: 'flex',
@@ -268,7 +268,7 @@ const Dashboard = () => {
       <div style={{
         flex: 1,
         padding: '2rem',
-        backgroundColor: '#111827'
+        backgroundColor: '#0E121B'
       }}>
         {renderContent()}
       </div>

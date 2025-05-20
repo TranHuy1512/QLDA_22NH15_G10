@@ -1,7 +1,7 @@
 import {useState} from "react";
 import {useAuth} from '../context/authContext.jsx'
 import BlurOverlay from "../components/BlurOverlay.jsx";
-import {ErrorMessage, FormContainer, FormWrapper, Input, Label, Title, Button, StyledLink} from "../components/FormComponents";
+import {ErrorMessage, FormContainer, FormWrapper, Input, Label, Title, Button, StyledLink} from "../components/TaskComponents/FormComponents.jsx";
 import {Link, useNavigate} from "react-router-dom";
 
 function Login() {

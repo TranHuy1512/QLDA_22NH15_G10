@@ -2,7 +2,7 @@ import {useState, useEffect} from "react";
 import {useNavigate, useLocation} from "react-router-dom";
 import axios from "axios";
 import BlurOverlay from "../components/BlurOverlay.jsx";
-import {ErrorMessage, FormContainer, FormWrapper, Input, Label, Title, Button, StyledLink} from "../components/FormComponents";
+import {ErrorMessage, FormContainer, FormWrapper, Input, Label, Title, Button, StyledLink} from "../components/TaskComponents/FormComponents.jsx";
 import {Link} from "react-router-dom";
 
 function ResetPassword() {
