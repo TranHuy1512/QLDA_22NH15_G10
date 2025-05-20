@@ -3,6 +3,7 @@ import { useAuth } from '../context/authContext';
 import TaskPage from './TaskPage';
 import KanbanBoard from './KanbanBoard';
 import CreateTeam from '../components/CreateTeam';
+import TeamsPage from './TeamsPage';
 import axios from 'axios';
 
 const Dashboard = () => {
@@ -78,6 +79,8 @@ const Dashboard = () => {
         return <TaskPage />;
       case 'board':
         return <KanbanBoard />;
+      case 'teams':
+        return <TeamsPage />;
       case 'settings':
         return (
           <div style={{ color: 'white' }}>
@@ -168,6 +171,11 @@ const Dashboard = () => {
           name="Board"
           id="board"
           icon={<span>🗂️</span>}
+        />
+        <SidebarItem
+          name="Teams"
+          id="teams"
+          icon={<span>👥</span>}
         />
         <SidebarItem
           name="Settings"
