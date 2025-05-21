@@ -1,5 +1,11 @@
 const Task = require('../models/Task');
-const { sendTaskAssignmentNotification } = require('../services/notificationService');
+const {
+  sendTaskAssignmentNotification,
+  sendTaskStatusChangeNotification,
+  sendTaskPriorityChangeNotification,
+  sendTaskDueDateChangeNotification,
+  sendTaskAssignmentRemovedNotification
+} = require('../services/notificationService');
 
 // Create a new task
 const createTask = async (req, res) => {
@@ -127,6 +133,16 @@ const updateTask = async (req, res) => {
     const { taskId } = req.params;
     const updateData = req.body;
 
+    // Find the task before updating to compare changes
+    const originalTask = await Task.findById(taskId);
+
+    if (!originalTask) {
+      return res.status(404).json({
+        success: false,
+        message: 'Task not found'
+      });
+    }
+
     const task = await Task.findByIdAndUpdate(
       taskId,
       updateData,
@@ -136,16 +152,55 @@ const updateTask = async (req, res) => {
      .populate('team', 'name');
 
     if (!task) {
+      // This case should theoretically not be reached if originalTask was found, but as a safeguard:
       return res.status(404).json({
         success: false,
-        message: 'Task not found'
+        message: 'Task not found after update attempt'
       });
     }
 
-    // If assignees were updated, send notifications
-    if (updateData.assignees) {
-      await sendTaskAssignmentNotification(task, updateData.assignees);
+    // Detect changes and send notifications
+    
+    // Check for assignee changes
+    const originalAssigneeIds = originalTask.assignees.map(a => a.toString());
+    const updatedAssigneeIds = task.assignees.map(a => a._id.toString());
+
+    const assigneesAdded = updatedAssigneeIds.filter(id => !originalAssigneeIds.includes(id));
+    const assigneesRemoved = originalAssigneeIds.filter(id => !updatedAssigneeIds.includes(id));
+
+    // Send notification for added assignees
+    if (assigneesAdded.length > 0) {
+      await sendTaskAssignmentNotification(task, assigneesAdded);
     }
+    
+    // Send notification for removed assignees
+    for (const removedAssigneeId of assigneesRemoved) {
+        await sendTaskAssignmentRemovedNotification(task, removedAssigneeId);
+    }
+
+    // Check for status changes
+    if (originalTask.status !== task.status) {
+      await sendTaskStatusChangeNotification(task, originalTask.status, task.status);
+    }
+
+    // Check for priority changes
+    if (originalTask.priority !== task.priority) {
+      await sendTaskPriorityChangeNotification(task, originalTask.priority, task.priority);
+    }
+
+    // Check for due date changes
+    const originalDueDate = originalTask.dueDate ? originalTask.dueDate.getTime() : null;
+    const updatedDueDate = task.dueDate ? task.dueDate.getTime() : null;
+
+    if (originalDueDate !== updatedDueDate) {
+        await sendTaskDueDateChangeNotification(task, originalTask.dueDate, task.dueDate);
+    }
+
+    // Check for title or description changes (optional - uncomment if needed)
+    // if (originalTask.title !== task.title || originalTask.description !== task.description) {
+    //   // Decide if you want to send a generic update notification or not
+    //   // For now, we focus on assignee, status, priority, and due date as per common requirements.
+    // }
 
     res.json({
       success: true,
