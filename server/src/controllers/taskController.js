@@ -1,4 +1,5 @@
 const Task = require('../models/Task');
+const TaskComment = require('../models/TaskComment');
 const {
   sendTaskAssignmentNotification,
   sendTaskStatusChangeNotification,
@@ -6,6 +7,7 @@ const {
   sendTaskDueDateChangeNotification,
   sendTaskAssignmentRemovedNotification
 } = require('../services/notificationService');
+const { validationResult } = require('express-validator');
 
 // Create a new task
 const createTask = async (req, res) => {
@@ -240,11 +242,90 @@ const deleteTask = async (req, res) => {
   }
 };
 
+// Add a comment to a task
+const addTaskComment = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
+  try {
+    const { taskId } = req.params;
+    const { content } = req.body;
+    const userId = req.user.userId;
+
+    // Check if the task exists
+    const task = await Task.findById(taskId);
+    if (!task) {
+      return res.status(404).json({
+        success: false,
+        message: 'Task not found'
+      });
+    }
+
+    const newComment = new TaskComment({
+      task: taskId,
+      user: userId,
+      content
+    });
+
+    await newComment.save();
+
+    // Populate the user field for the response
+    const populatedComment = await TaskComment.findById(newComment._id)
+      .populate('user', 'name email');
+
+    res.status(201).json({
+      success: true,
+      data: populatedComment
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error adding comment',
+      error: error.message
+    });
+  }
+};
+
+// Get comments for a task
+const getTaskComments = async (req, res) => {
+  try {
+    const { taskId } = req.params;
+
+    // Check if the task exists (optional, but good practice)
+     const task = await Task.findById(taskId);
+     if (!task) {
+       return res.status(404).json({
+         success: false,
+         message: 'Task not found'
+       });
+     }
+
+    const comments = await TaskComment.find({ task: taskId })
+      .populate('user', 'name email')
+      .sort({ createdAt: 1 });
+
+    res.json({
+      success: true,
+      data: comments
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching comments',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   createTask,
   updateTaskAssignees,
   getTasks,
   getTaskById,
   updateTask,
-  deleteTask
+  deleteTask,
+  addTaskComment,
+  getTaskComments
 }; 

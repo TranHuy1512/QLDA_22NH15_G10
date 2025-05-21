@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axiosInstance from '../../utils/axios';
+import { useAuth } from '../../context/authContext';
 
 const FormCreateTask = ({ onClose, onSubmit, initialData }) => {
   const [formData, setFormData] = useState({
@@ -14,6 +15,12 @@ const FormCreateTask = ({ onClose, onSubmit, initialData }) => {
   const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
+  const [comments, setComments] = useState([]);
+  const [newCommentContent, setNewCommentContent] = useState('');
+  const [loadingComments, setLoadingComments] = useState(false);
+  const [postingComment, setPostingComment] = useState(false);
+
+  const { user } = useAuth();
 
   useEffect(() => {
     fetchUsers();
@@ -21,7 +28,6 @@ const FormCreateTask = ({ onClose, onSubmit, initialData }) => {
 
   useEffect(() => {
     if (initialData) {
-      // Convert assignees array to array of user IDs
       const assigneeIds = initialData.assignees.map(assignee => 
         typeof assignee === 'object' ? assignee._id : assignee
       );
@@ -34,6 +40,7 @@ const FormCreateTask = ({ onClose, onSubmit, initialData }) => {
         assignees: assigneeIds,
         dueDate: initialData.dueDate ? new Date(initialData.dueDate).toISOString().slice(0, 16) : ''
       });
+      fetchComments(initialData._id);
     }
   }, [initialData]);
 
@@ -54,10 +61,58 @@ const FormCreateTask = ({ onClose, onSubmit, initialData }) => {
     }
   };
 
+  const fetchComments = async (taskId) => {
+    if (!taskId) return;
+    try {
+      setLoadingComments(true);
+      const response = await axiosInstance.get(`/api/tasks/${taskId}/comments`);
+      if (response.data.success) {
+        setComments(response.data.data);
+      } else {
+        console.error('Failed to fetch comments:', response.data.message);
+      }
+    } catch (error) {
+      console.error('Error fetching comments:', error);
+    } finally {
+      setLoadingComments(false);
+    }
+  };
+
+  const handleCommentSubmit = async (e) => {
+    e.preventDefault();
+    if (!newCommentContent.trim() || !initialData?._id || postingComment) return;
+
+    setPostingComment(true);
+    try {
+      const response = await axiosInstance.post(`/api/tasks/${initialData._id}/comments`, {
+        content: newCommentContent,
+      });
+
+      if (response.data.success) {
+        setComments(prev => [...prev, response.data.data]);
+        setNewCommentContent('');
+      } else {
+        console.error('Failed to post comment:', response.data.message);
+      }
+    } catch (error) {
+      console.error('Error posting comment:', error);
+    } finally {
+      setPostingComment(false);
+    }
+  };
+
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    if (name === 'assignees') {
-      // Convert the selected options to an array of values
+    const { name, value, type, checked } = e.target;
+
+    if (name === 'assignees' && type === 'checkbox') {
+      const userId = value;
+      setFormData(prev => ({
+        ...prev,
+        assignees: checked
+          ? [...prev.assignees, userId]
+          : prev.assignees.filter(id => id !== userId)
+      }));
+    } else if (name === 'assignees' && type === 'select-multiple') {
       const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
       setFormData(prev => ({
         ...prev,
@@ -77,18 +132,13 @@ const FormCreateTask = ({ onClose, onSubmit, initialData }) => {
     setLoading(true);
 
     try {
-      console.log('Submitting task data:', formData);
       let response;
       
       if (initialData) {
-        // Update existing task
         response = await axiosInstance.put(`/api/tasks/${initialData._id}`, formData);
       } else {
-        // Create new task
         response = await axiosInstance.post('/api/tasks', formData);
       }
-      
-      console.log('Task response:', response.data);
       
       if (response.data.success) {
         onSubmit(response.data.data);
@@ -159,6 +209,58 @@ const FormCreateTask = ({ onClose, onSubmit, initialData }) => {
     fontWeight: '500'
   };
 
+  const commentInputStyles = {
+    ...commonInputStyles,
+    resize: 'vertical',
+    minHeight: '60px',
+    marginBottom: '1rem'
+  };
+
+  const commentButtonStyles = {
+    backgroundColor: '#3B82F6',
+    color: 'white',
+    padding: '0.75rem 1.5rem',
+    borderRadius: '0.375rem',
+    border: 'none',
+    cursor: 'pointer',
+    transition: 'background-color 0.2s',
+    ':hover': {
+      backgroundColor: '#2563EB'
+    },
+    ':disabled': {
+      backgroundColor: '#1E3A8A',
+      cursor: 'not-allowed'
+    }
+  };
+
+  const checkboxListStyles = {
+    maxHeight: '150px',
+    overflowY: 'auto',
+    backgroundColor: '#374151',
+    border: '1px solid #4B5563',
+    borderRadius: '0.375rem',
+    padding: '0.5rem'
+  };
+
+  const checkboxItemStyles = {
+    display: 'flex',
+    alignItems: 'center',
+    padding: '0.5rem',
+    cursor: 'pointer',
+    borderRadius: '0.25rem',
+    transition: 'background-color 0.2s',
+    ':hover': {
+      backgroundColor: '#4B5563'
+    }
+  };
+
+  const checkboxStyles = {
+    marginRight: '0.75rem',
+    width: '1rem',
+    height: '1rem',
+    cursor: 'pointer'
+  };
+
   return (
     <div style={{
       position: 'fixed',
@@ -171,16 +273,19 @@ const FormCreateTask = ({ onClose, onSubmit, initialData }) => {
       alignItems: 'center',
       justifyContent: 'center',
       zIndex: 1000,
-      backdropFilter: 'blur(4px)'
+      backdropFilter: 'blur(4px)',
+      overflowY: 'auto'
     }}>
       <div style={{
         backgroundColor: '#1F2937',
         borderRadius: '0.75rem',
         padding: '2rem',
         width: '100%',
-        maxWidth: '500px',
+        maxWidth: initialData ? '700px' : '500px',
         color: 'white',
-        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+        maxHeight: '90vh',
+        overflowY: 'auto'
       }}>
         <div style={{
           display: 'flex',
@@ -192,7 +297,7 @@ const FormCreateTask = ({ onClose, onSubmit, initialData }) => {
             fontSize: '1.5rem',
             fontWeight: '600',
             color: 'white'
-          }}>{initialData ? 'Edit Task' : 'Create New Task'}</h2>
+          }}>{initialData ? 'Task Details' : 'Create New Task'}</h2>
           <button
             onClick={onClose}
             style={{
@@ -210,189 +315,193 @@ const FormCreateTask = ({ onClose, onSubmit, initialData }) => {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: '1.5rem' }}>
-            <label style={commonLabelStyles}>Title</label>
-            <input
-              type="text"
-              name="title"
-              value={formData.title}
-              onChange={handleChange}
-              required
-              style={commonInputStyles}
-              placeholder="Enter task title"
-            />
-          </div>
+        <div>
+          <form onSubmit={handleSubmit}>
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label style={commonLabelStyles}>Title</label>
+              <input
+                type="text"
+                name="title"
+                value={formData.title}
+                onChange={handleChange}
+                required
+                style={commonInputStyles}
+                placeholder="Enter task title"
+              />
+            </div>
 
-          <div style={{ marginBottom: '1.5rem' }}>
-            <label style={commonLabelStyles}>Description</label>
-            <textarea
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              required
-              style={{
-                ...commonInputStyles,
-                minHeight: '100px',
-                resize: 'vertical'
-              }}
-              placeholder="Enter task description"
-            />
-          </div>
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label style={commonLabelStyles}>Description</label>
+              <textarea
+                name="description"
+                value={formData.description}
+                onChange={handleChange}
+                required
+                style={{
+                  ...commonInputStyles,
+                  minHeight: '100px',
+                  resize: 'vertical'
+                }}
+                placeholder="Enter task description"
+              />
+            </div>
 
-          <div style={{ marginBottom: '1.5rem' }}>
-            <label style={commonLabelStyles}>Status</label>
-            <select
-              name="status"
-              value={formData.status}
-              onChange={handleChange}
-              style={{
-                ...commonInputStyles,
-                color: getStatusColor(formData.status)
-              }}
-            >
-              <option value="todo">To Do</option>
-              <option value="in-progress">In Progress</option>
-              <option value="completed">Completed</option>
-            </select>
-          </div>
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label style={commonLabelStyles}>Status</label>
+              <select
+                name="status"
+                value={formData.status}
+                onChange={handleChange}
+                style={{
+                  ...commonInputStyles,
+                }}
+              >
+                <option value="todo">To Do</option>
+                <option value="in-progress">In Progress</option>
+                <option value="completed">Completed</option>
+              </select>
+            </div>
 
-          <div style={{ marginBottom: '1.5rem' }}>
-            <label style={commonLabelStyles}>Priority</label>
-            <select
-              name="priority"
-              value={formData.priority}
-              onChange={handleChange}
-              style={{
-                ...commonInputStyles,
-                color: getPriorityColor(formData.priority)
-              }}
-            >
-              <option value="low">Low</option>
-              <option value="medium">Medium</option>
-              <option value="high">High</option>
-            </select>
-          </div>
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label style={commonLabelStyles}>Priority</label>
+              <select
+                name="priority"
+                value={formData.priority}
+                onChange={handleChange}
+                style={{
+                   ...commonInputStyles,
+                }}
+              >
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+              </select>
+            </div>
 
-          <div style={{ marginBottom: '1.5rem' }}>
-            <label style={commonLabelStyles}>Assignees (optional)</label>
-            <div style={{
-              maxHeight: '200px',
-              overflowY: 'auto',
-              backgroundColor: '#374151',
-              border: '1px solid #4B5563',
-              borderRadius: '0.375rem',
-              padding: '0.5rem'
-            }}>
-              {loadingUsers ? (
-                <div style={{ color: '#9CA3AF', padding: '0.5rem' }}>Loading users...</div>
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label style={commonLabelStyles}>Assignees</label>
+               {loadingUsers ? (
+                  <p style={{color: '#9CA3AF'}}>Loading users...</p>
+                ) : (
+               <div style={checkboxListStyles}>
+                  {users.map(user => (
+                    <label key={user._id} style={checkboxItemStyles}>
+                      <input
+                        type="checkbox"
+                        name="assignees"
+                        value={user._id}
+                        checked={formData.assignees.includes(user._id)}
+                        onChange={handleChange}
+                        style={checkboxStyles}
+                      />
+                      <span style={{ color: 'white' }}>
+                        {user.name} ({user.email})
+                      </span>
+                    </label>
+                  ))}
+                </div>
+                )}
+            </div>
+
+             <div style={{ marginBottom: '1.5rem' }}>
+              <label style={commonLabelStyles}>Due Date</label>
+              <input
+                type="datetime-local"
+                name="dueDate"
+                value={formData.dueDate}
+                onChange={handleChange}
+                 style={commonInputStyles}
+              />
+            </div>
+
+            {error && <p style={{ color: '#EF4444', marginBottom: '1rem' }}>{error}</p>}
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+               <button
+                type="button"
+                onClick={onClose}
+                style={{
+                  padding: '0.75rem 1.5rem',
+                  borderRadius: '0.375rem',
+                  border: '1px solid #4B5563',
+                  backgroundColor: '#374151',
+                  color: 'white',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                   ':hover': {
+                      backgroundColor: '#4B5563'
+                    }
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={loading || loadingUsers}
+                style={{
+                  backgroundColor: '#3B82F6',
+                  color: 'white',
+                  padding: '0.75rem 1.5rem',
+                  borderRadius: '0.375rem',
+                  border: 'none',
+                  cursor: 'pointer',
+                  transition: 'background-color 0.2s',
+                  ':hover': {
+                    backgroundColor: '#2563EB'
+                  },
+                  ':disabled': {
+                    backgroundColor: '#1E3A8A',
+                    cursor: 'not-allowed'
+                  }
+                }}
+              >
+                {loading ? 'Saving...' : (initialData ? 'Save Changes' : 'Create Task')}
+              </button>
+            </div>
+          </form>
+        </div>
+        
+        {initialData && (
+          <div style={{ marginTop: '2rem', borderTop: '1px solid #374151', paddingTop: '2rem' }}>
+            <h3 style={{
+              fontSize: '1.25rem',
+              fontWeight: '600',
+              color: 'white',
+              marginBottom: '1.5rem'
+            }}>Comments</h3>
+
+            <div style={{ marginBottom: '1.5rem', maxHeight: '300px', overflowY: 'auto' }}>
+              {loadingComments ? (
+                <p style={{color: '#9CA3AF'}}>Loading comments...</p>
+              ) : comments.length === 0 ? (
+                <p style={{color: '#9CA3AF'}}>No comments yet.</p>
               ) : (
-                users.map(user => (
-                  <label
-                    key={user._id}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      padding: '0.5rem',
-                      cursor: 'pointer',
-                      borderRadius: '0.25rem',
-                      transition: 'background-color 0.2s',
-                      ':hover': {
-                        backgroundColor: '#4B5563'
-                      }
-                    }}
-                  >
-                    <input
-                      type="checkbox"
-                      value={user._id}
-                      checked={formData.assignees.includes(user._id)}
-                      onChange={(e) => {
-                        const userId = e.target.value;
-                        setFormData(prev => ({
-                          ...prev,
-                          assignees: e.target.checked
-                            ? [...prev.assignees, userId]
-                            : prev.assignees.filter(id => id !== userId)
-                        }));
-                      }}
-                      style={{
-                        marginRight: '0.75rem',
-                        width: '1rem',
-                        height: '1rem',
-                        cursor: 'pointer'
-                      }}
-                    />
-                    <span style={{ color: 'white' }}>
-                      {user.name} ({user.email})
-                    </span>
-                  </label>
+                comments.map(comment => (
+                  <div key={comment._id} style={{ marginBottom: '1rem', paddingBottom: '1rem', borderBottom: '1px dashed #374151' }}>
+                    <p style={{ fontSize: '0.9rem', color: '#9CA3AF', marginBottom: '0.25rem' }}>
+                      <strong>{comment.user.name || 'Unknown User'}</strong> at {new Date(comment.createdAt).toLocaleString()}
+                    </p>
+                    <p style={{ color: 'white', lineHeight: '1.4' }}>{comment.content}</p>
+                  </div>
                 ))
               )}
             </div>
-          </div>
 
-          <div style={{ marginBottom: '1.5rem' }}>
-            <label style={commonLabelStyles}>Due Date</label>
-            <input
-              type="datetime-local"
-              name="dueDate"
-              value={formData.dueDate}
-              onChange={handleChange}
-              required
-              style={commonInputStyles}
-            />
+            <form onSubmit={handleCommentSubmit}>
+              <textarea
+                value={newCommentContent}
+                onChange={(e) => setNewCommentContent(e.target.value)}
+                placeholder="Add a comment..."
+                required
+                style={commentInputStyles}
+              />
+              <button type="submit" disabled={postingComment || !newCommentContent.trim()} style={commentButtonStyles}>
+                {postingComment ? 'Posting...' : 'Post Comment'}
+              </button>
+            </form>
           </div>
+        )}
 
-          {error && (
-            <div style={{
-              color: '#EF4444',
-              marginBottom: '1rem',
-              padding: '0.75rem',
-              backgroundColor: 'rgba(239, 68, 68, 0.1)',
-              borderRadius: '0.375rem'
-            }}>
-              {error}
-            </div>
-          )}
-
-          <div style={{
-            display: 'flex',
-            justifyContent: 'flex-end',
-            gap: '1rem'
-          }}>
-            <button
-              type="button"
-              onClick={onClose}
-              style={{
-                padding: '0.75rem 1.5rem',
-                backgroundColor: '#374151',
-                color: 'white',
-                border: 'none',
-                borderRadius: '0.375rem',
-                cursor: 'pointer',
-                transition: 'all 0.2s'
-              }}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              style={{
-                padding: '0.75rem 1.5rem',
-                backgroundColor: '#3B82F6',
-                color: 'white',
-                border: 'none',
-                borderRadius: '0.375rem',
-                cursor: loading ? 'not-allowed' : 'pointer',
-                opacity: loading ? 0.7 : 1,
-                transition: 'all 0.2s'
-              }}
-            >
-              {loading ? 'Saving...' : (initialData ? 'Update Task' : 'Create Task')}
-            </button>
-          </div>
-        </form>
       </div>
     </div>
   );
