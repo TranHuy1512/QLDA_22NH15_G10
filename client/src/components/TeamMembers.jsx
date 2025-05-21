@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import axios from '../utils/axios';
+import { useAuth } from '../context/authContext';
 
 const TeamMembers = ({ teamId }) => {
+  const { user: loggedInUser } = useAuth();
   const [members, setMembers] = useState([]);
   const [allUsers, setAllUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -86,14 +88,38 @@ const TeamMembers = ({ teamId }) => {
       toast.success('Member removed successfully');
       fetchMembers();
     } catch (error) {
-      toast.error('Failed to remove member');
       console.error('Error removing member:', error);
+      if (error.response && error.response.status === 403) {
+        toast.error('You do not have permission to remove members.');
+      } else {
+        toast.error('Failed to remove member');
+      }
     }
   };
 
-  const handleRoleChange = (memberId, newRole) => {
-    console.log(`Attempting to change role for member ${memberId} to ${newRole}`);
-    // TODO: Implement API call to update member role
+  const handleRoleChange = async (userId, newRole) => {
+    try {
+      // Optimistically update the UI
+      setMembers(members.map(member =>
+        member.user._id === userId ? { ...member, role: newRole } : member
+      ));
+
+      const response = await axios.put(`/api/teams/${teamId}/members/${userId}/role`, { role: newRole });
+
+      if (response.data.success) {
+        toast.success('Member role updated successfully');
+        // No need to fetchMembers() again if optimistic update is correct
+      } else {
+        toast.error(response.data.message || 'Failed to update member role');
+        // Revert UI change if API call failed
+        fetchMembers();
+      }
+    } catch (error) {
+      toast.error('Failed to update member role');
+      console.error('Error updating member role:', error);
+      // Revert UI change on error
+      fetchMembers();
+    }
   };
 
   const handleCheckboxChange = (userId) => {
@@ -111,6 +137,10 @@ const TeamMembers = ({ teamId }) => {
 
   const currentMemberIds = members.map(member => member.user._id);
   const hasNewSelectedMembers = selectedUserIds.some(userId => !currentMemberIds.includes(userId));
+
+  // Determine if the current user is an admin
+  const currentUserMember = members.find(member => member.user._id === loggedInUser?._id);
+  const isCurrentUserAdmin = currentUserMember && currentUserMember.role === 'admin';
 
   if (loading || loadingUsers) {
     return (
@@ -322,7 +352,8 @@ const TeamMembers = ({ teamId }) => {
                   {/* Role Selection */}
                   <select
                     value={member.role}
-                    onChange={(e) => handleRoleChange(member._id, e.target.value)}
+                    onChange={(e) => handleRoleChange(member.user._id, e.target.value)}
+                    disabled={!isCurrentUserAdmin}
                     style={{
                       padding: '0.5rem',
                       borderRadius: '0.375rem',
@@ -338,6 +369,7 @@ const TeamMembers = ({ teamId }) => {
                   </select>
                   <button
                     onClick={() => handleRemoveMember(member.user._id)}
+                    disabled={!isCurrentUserAdmin}
                     style={{
                       padding: '0.5rem 1rem',
                       borderRadius: '0.375rem',
