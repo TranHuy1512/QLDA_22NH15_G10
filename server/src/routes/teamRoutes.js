@@ -3,6 +3,7 @@ const router = express.Router();
 const Team = require("../models/Team");
 const GroupMember = require("../models/GroupMember");
 const { auth } = require('../middleware/auth');
+const { body, validationResult } = require('express-validator');
 const {
   addTeamMember,
   removeTeamMember,
@@ -46,15 +47,21 @@ router.get('/', async (req, res) => {
 });
 
 // POST /api/teams - Create a new team
-router.post('/', async (req, res) => {
+router.post('/', [
+  body('name').trim().notEmpty().withMessage('Team name is required'),
+  body('description').optional().trim()
+], async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
   try {
-    console.log('Received team creation request:', req.body);
-    const { name, description, members } = req.body; // Destructure members from body
-    const creatorId = req.user.userId; // Get the creator's ID
+    const { name, description, members } = req.body;
+    const creatorId = req.user.userId;
 
     // Validate required fields
     if (!name || !description) {
-      console.log('Validation failed:', { name, description });
       return res.status(400).json({
         success: false,
         message: 'Please provide both name and description'
@@ -70,24 +77,26 @@ router.post('/', async (req, res) => {
     // Add the creator as an admin member of the team
     await GroupMember.create({
       team: team._id,
-      user: creatorId, // Use creatorId
-      role: 'admin' // Set the creator's role to admin
+      user: creatorId,
+      role: 'admin'
     });
 
     // Add selected members (excluding the creator if included)
     if (members && Array.isArray(members)) {
-      const membersToAdd = members.filter(userId => userId !== creatorId); // Exclude creator
-      const memberDocs = membersToAdd.map(userId => ({
+      // Ensure membersToAdd are unique and exclude the creator
+      const uniqueMembersToAdd = [...new Set(members)].filter(userId => userId !== creatorId);
+
+      const memberDocs = uniqueMembersToAdd.map(userId => ({
         team: team._id,
         user: userId,
-        role: 'member' // Set role for added members
+        role: 'member'
       }));
+
       if (memberDocs.length > 0) {
         await GroupMember.insertMany(memberDocs);
       }
     }
 
-    console.log('Team created successfully:', team);
     res.status(201).json({
       success: true,
       data: team
