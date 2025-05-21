@@ -49,7 +49,8 @@ router.get('/', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     console.log('Received team creation request:', req.body);
-    const { name, description } = req.body;
+    const { name, description, members } = req.body; // Destructure members from body
+    const creatorId = req.user.userId; // Get the creator's ID
 
     // Validate required fields
     if (!name || !description) {
@@ -69,9 +70,22 @@ router.post('/', async (req, res) => {
     // Add the creator as an admin member of the team
     await GroupMember.create({
       team: team._id,
-      user: req.user.userId, // Use req.user.userId to get the creator's ID
+      user: creatorId, // Use creatorId
       role: 'admin' // Set the creator's role to admin
     });
+
+    // Add selected members (excluding the creator if included)
+    if (members && Array.isArray(members)) {
+      const membersToAdd = members.filter(userId => userId !== creatorId); // Exclude creator
+      const memberDocs = membersToAdd.map(userId => ({
+        team: team._id,
+        user: userId,
+        role: 'member' // Set role for added members
+      }));
+      if (memberDocs.length > 0) {
+        await GroupMember.insertMany(memberDocs);
+      }
+    }
 
     console.log('Team created successfully:', team);
     res.status(201).json({
