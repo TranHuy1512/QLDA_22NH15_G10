@@ -12,10 +12,19 @@ const {
 // Apply auth middleware to all routes
 router.use(auth);
 
-// GET /api/teams - Get all teams
+// GET /api/teams - Get all teams the user is a member of
 router.get('/', async (req, res) => {
   try {
-    const teams = await Team.find().sort({ createdAt: -1 });
+    const userId = req.user.userId; // Correctly get the logged-in user's ID from req.user.userId
+    
+    // Find all group memberships for the user
+    const memberships = await GroupMember.find({ user: userId });
+
+    // Extract the team IDs from the memberships
+    const teamIds = memberships.map(membership => membership.team);
+
+    // Find teams that match the extracted team IDs and sort them
+    const teams = await Team.find({ _id: { $in: teamIds } }).sort({ createdAt: -1 });
     
     // Fetch member count for each team
     const teamsWithMemberCount = await Promise.all(teams.map(async (team) => {
@@ -55,6 +64,13 @@ router.post('/', async (req, res) => {
     const team = await Team.create({
       name,
       description
+    });
+
+    // Add the creator as an admin member of the team
+    await GroupMember.create({
+      team: team._id,
+      user: req.user.userId, // Use req.user.userId to get the creator's ID
+      role: 'admin' // Set the creator's role to admin
     });
 
     console.log('Team created successfully:', team);
