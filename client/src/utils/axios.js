@@ -1,14 +1,15 @@
 import axios from 'axios';
 
-const axiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000',
+// Create axios instance with base URL
+const instance = axios.create({
+  baseURL: 'http://localhost:5000', // Your backend server URL
   headers: {
-    'Content-Type': 'application/json',
-  },
+    'Content-Type': 'application/json'
+  }
 });
 
-// Add a request interceptor
-axiosInstance.interceptors.request.use(
+// Add request interceptor to add auth token
+instance.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('site');
     if (token) {
@@ -22,7 +23,7 @@ axiosInstance.interceptors.request.use(
 );
 
 // Add a response interceptor
-axiosInstance.interceptors.response.use(
+instance.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
@@ -34,4 +35,4 @@ axiosInstance.interceptors.response.use(
   }
 );
 
-export default axiosInstance; 
+export default instance; 

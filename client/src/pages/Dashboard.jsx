@@ -4,10 +4,14 @@ import TaskPage from './TaskPage';
 import KanbanBoard from './KanbanBoard';
 import CreateTeam from '../components/CreateTeam';
 import TeamsPage from './TeamsPage';
+import TeamManagement from './TeamManagement';
 import axiosInstance from '../utils/axios';
+import { useLocation, useParams, useNavigate } from 'react-router-dom';
 
 const Dashboard = () => {
   const { user } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [activeItem, setActiveItem] = useState('tasks');
   const [showCreateTeam, setShowCreateTeam] = useState(false);
   const [teams, setTeams] = useState([]);
@@ -20,15 +24,31 @@ const Dashboard = () => {
     fetchTeams();
   }, []);
 
+  useEffect(() => {
+    if (location.pathname.startsWith('/teams/') && location.pathname.split('/').length === 3) {
+      const teamIdFromUrl = location.pathname.split('/')[2];
+      setActiveItem(`team-${teamIdFromUrl}`);
+    } else if (location.pathname === '/dashboard') {
+       setActiveItem('tasks');
+    } else if (location.pathname === '/settings') {
+      setActiveItem('settings');
+    } else if (location.pathname === '/teams') {
+      setActiveItem('teams');
+    } else if (location.pathname === '/board') {
+      setActiveItem('board');
+    }
+
+  }, [location.pathname]);
+
   const fetchTeams = async () => {
     try {
+      setLoading(true);
       const response = await axiosInstance.get('/api/teams');
       if (response.data.success) {
         const teamsData = response.data.data;
         setTeams(teamsData);
-        if (teamsData.length > 0) {
+        if (!location.pathname.startsWith('/teams/') && teamsData.length > 0) {
           setSelectedTeam(teamsData[0]);
-          setActiveItem(`team-${teamsData[0]._id}`);
         }
       }
     } catch (error) {
@@ -39,41 +59,54 @@ const Dashboard = () => {
     }
   };
 
-  const SidebarItem = ({ name, id, icon, onClick }) => (
-    <div
-      onClick={onClick || (() => setActiveItem(id))}
-      style={{
-        padding: '1rem',
-        color: activeItem === id ? 'white' : '#9CA3AF',
-        backgroundColor: activeItem === id ? '#374151' : 'transparent',
-        cursor: 'pointer',
-        borderRadius: '0.375rem',
-        marginBottom: '0.5rem',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '0.75rem',
-        transition: 'all 0.2s',
-        ':hover': {
-          backgroundColor: '#374151',
-          color: 'white'
-        }
-      }}
-    >
-      {icon}
-      <span style={{ flex: 1 }}>{name}</span>
-    </div>
-  );
+  const SidebarItem = ({ name, id, icon, route }) => {
+    const handleClick = () => {
+      setActiveItem(id);
+      if (route) {
+        navigate(route);
+      }
+    };
+
+    return (
+      <div
+        onClick={handleClick}
+        style={{
+          padding: '1rem',
+          color: activeItem === id || (route && location.pathname.startsWith(route)) ? 'white' : '#9CA3AF',
+          backgroundColor: activeItem === id || (route && location.pathname.startsWith(route)) ? '#374151' : 'transparent',
+          cursor: 'pointer',
+          borderRadius: '0.375rem',
+          marginBottom: '0.5rem',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.75rem',
+          transition: 'all 0.2s',
+          ':hover': {
+            backgroundColor: '#374151',
+            color: 'white'
+          }
+        }}
+      >
+        {icon}
+        <span style={{ flex: 1 }}>{name}</span>
+      </div>
+    );
+  };
 
   const handleCreateTeam = (teamData) => {
     const newTeams = [teamData, ...teams];
     setTeams(newTeams);
-    if (!selectedTeam) {
+    if (!location.pathname.startsWith('/teams/') && !selectedTeam) {
       setSelectedTeam(teamData);
-      setActiveItem(`team-${teamData._id}`);
     }
   };
 
   const renderContent = () => {
+    if (location.pathname.startsWith('/teams/') && location.pathname.split('/').length === 3) {
+        const teamIdFromUrl = location.pathname.split('/')[2];
+        return <TeamManagement teamId={teamIdFromUrl} />;
+    }
+
     switch (activeItem) {
       case 'tasks':
         return <TaskPage />;
@@ -110,29 +143,8 @@ const Dashboard = () => {
         );
       default:
         if (activeItem.startsWith('team-')) {
-          const teamId = activeItem.replace('team-', '');
-          const team = teams.find(t => t._id === teamId);
-          if (team) {
-            return (
-              <div style={{ color: 'white' }}>
-                <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>{team.name}</h2>
-                <div style={{ 
-                  backgroundColor: '#1F2937', 
-                  padding: '1.5rem', 
-                  borderRadius: '0.5rem',
-                  maxWidth: '600px'
-                }}>
-                  <p style={{ color: '#9CA3AF', marginBottom: '1rem' }}>{team.description}</p>
-                  <div style={{ 
-                    fontSize: '0.875rem',
-                    color: '#6B7280'
-                  }}>
-                    Created at: {new Date(team.createdAt).toLocaleDateString()}
-                  </div>
-                </div>
-              </div>
-            );
-          }
+           const teamIdFromActiveItem = activeItem.replace('team-', '');
+           return <TeamManagement teamId={teamIdFromActiveItem} />;
         }
         return null;
     }
@@ -166,21 +178,25 @@ const Dashboard = () => {
           name="Tasks"
           id="tasks"
           icon={<span>📋</span>}
+          route="/dashboard"
         />
         <SidebarItem
           name="Board"
           id="board"
           icon={<span>🗂️</span>}
+           route="/board"
         />
         <SidebarItem
           name="Teams"
           id="teams"
           icon={<span>👥</span>}
+           route="/teams"
         />
         <SidebarItem
           name="Settings"
           id="settings"
           icon={<span>⚙️</span>}
+           route="/settings"
         />
 
         <div style={{ 
@@ -248,14 +264,16 @@ const Dashboard = () => {
                         key={team._id}
                         onClick={() => {
                           setSelectedTeam(team);
-                          setActiveItem(`team-${team._id}`);
                           setIsTeamDropdownOpen(false);
+                          setActiveItem(`team-${team._id}`);
+                          navigate(`/teams/${team._id}`);
                         }}
                         style={{
                           padding: '0.75rem 1rem',
-                          color: selectedTeam?._id === team._id ? 'white' : '#9CA3AF',
-                          backgroundColor: selectedTeam?._id === team._id ? '#374151' : 'transparent',
+                          color: activeItem === `team-${team._id}` ? 'white' : '#9CA3AF',
+                          backgroundColor: activeItem === `team-${team._id}` ? '#374151' : 'transparent',
                           cursor: 'pointer',
+                          transition: 'all 0.2s',
                           ':hover': {
                             backgroundColor: '#374151',
                             color: 'white'
@@ -270,31 +288,73 @@ const Dashboard = () => {
               </div>
             )}
 
-            <SidebarItem
-              name="+ Create new team"
-              id="create-team"
-              icon={<span>➕</span>}
-              onClick={() => setShowCreateTeam(true)}
-            />
+             <div style={{ 
+               marginTop: '1rem',
+               paddingLeft: '1rem'
+             }}>
+               <button
+                 style={{
+                   background: 'none',
+                   border: 'none',
+                   color: '#9CA3AF',
+                   cursor: 'pointer',
+                   fontSize: '0.875rem',
+                   display: 'flex',
+                   alignItems: 'center',
+                   gap: '0.5rem'
+                 }}
+                 onClick={() => {
+                   setShowCreateTeam(true);
+                 }}
+               >
+                 +
+                 <span>Create new team</span>
+               </button>
+             </div>
           </div>
         </div>
       </div>
 
-      {/* Main Content */}
+      {/* Main content */}
       <div style={{
         flex: 1,
         padding: '2rem',
-        backgroundColor: '#0E121B'
+        overflowY: 'auto'
       }}>
         {renderContent()}
       </div>
 
       {showCreateTeam && (
-        <CreateTeam
-          onClose={() => setShowCreateTeam(false)}
-          onSubmit={handleCreateTeam}
-        />
+         <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.6)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+           <form onSubmit={(e) => { e.preventDefault(); setShowCreateTeam(false); handleCreateTeam({ name: e.target.teamName.value, description: e.target.teamDesc.value }); }} style={{ background: '#181C23', borderRadius: 12, padding: '2rem', minWidth: 340, boxShadow: '0 2px 16px rgba(0,0,0,0.18)' }}>
+             <h2 style={{ color: 'white', fontSize: '1.25rem', marginBottom: 16 }}>Create New Team</h2>
+             <div style={{ marginBottom: 16 }}>
+               <label style={{ color: '#9CA3AF', fontSize: 14 }}>Team Name</label>
+               <input
+                 type="text"
+                 name="teamName"
+                 required
+                 style={{ width: '100%', padding: 10, borderRadius: 6, border: '1px solid #374151', background: '#23272F', color: 'white', marginTop: 6 }}
+               />
+             </div>
+             <div style={{ marginBottom: 16 }}>
+               <label style={{ color: '#9CA3AF', fontSize: 14 }}>Description</label>
+               <textarea
+                 name="teamDesc"
+                 rows={3}
+                 style={{ width: '100%', padding: 10, borderRadius: 6, border: '1px solid #374151', background: '#23272F', color: 'white', marginTop: 6, resize: 'none' }}
+               />
+             </div>
+             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
+               <button type="button" onClick={() => setShowCreateTeam(false)} style={{ background: 'none', color: '#9CA3AF', border: 'none', fontSize: 15, cursor: 'pointer' }}>Cancel</button>
+               <button type="submit" style={{ background: '#fff', color: '#181C23', fontWeight: 'bold', borderRadius: 8, padding: '0.5rem 1.25rem', border: 'none', cursor: 'pointer', fontSize: '1rem' }}>
+                 Create
+               </button>
+             </div>
+           </form>
+         </div>
       )}
+
     </div>
   );
 };

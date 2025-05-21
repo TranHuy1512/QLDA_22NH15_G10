@@ -1,14 +1,31 @@
 const express = require('express');
 const router = express.Router();
 const Team = require("../models/Team");
+const GroupMember = require("../models/GroupMember");
+const { auth } = require('../middleware/auth');
+const {
+  addTeamMember,
+  removeTeamMember,
+  getTeamMembers
+} = require('../controllers/teamMemberController');
+
+// Apply auth middleware to all routes
+router.use(auth);
 
 // GET /api/teams - Get all teams
 router.get('/', async (req, res) => {
   try {
     const teams = await Team.find().sort({ createdAt: -1 });
+    
+    // Fetch member count for each team
+    const teamsWithMemberCount = await Promise.all(teams.map(async (team) => {
+      const memberCount = await GroupMember.countDocuments({ team: team._id });
+      return { ...team.toObject(), memberCount };
+    }));
+
     res.json({
       success: true,
-      data: teams
+      data: teamsWithMemberCount
     });
   } catch (error) {
     console.error('Error fetching teams:', error);
@@ -104,5 +121,10 @@ router.delete('/:id', async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 });
+
+// Team member management routes
+router.post('/:teamId/members', addTeamMember);
+router.delete('/:teamId/members/:userId', removeTeamMember);
+router.get('/:teamId/members', getTeamMembers);
 
 module.exports = router;

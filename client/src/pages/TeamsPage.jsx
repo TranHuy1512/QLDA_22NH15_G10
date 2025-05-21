@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axiosInstance from '../utils/axios';
+import { Link } from 'react-router-dom';
 
 const TeamsPage = () => {
   const [teams, setTeams] = useState([]);
@@ -138,14 +139,21 @@ const TeamsPage = () => {
                   <span style={{ fontWeight: 600, fontSize: '1.1rem' }}>{team.name}</span>
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>
+                  <Link to={`/teams/${team._id}`} style={{ background: 'none', border: 'none', color: '#9CA3AF', cursor: 'pointer', fontSize: 18 }} title="Manage Members">
+                    <span role="img" aria-label="manage members">👥</span>
+                  </Link>
                   <button onClick={() => handleEditTeam(team)} style={{ background: 'none', border: 'none', color: '#9CA3AF', cursor: 'pointer', fontSize: 18 }} title="Edit"><span role="img" aria-label="edit">✏️</span></button>
                   <button onClick={() => handleDeleteTeam(team._id)} style={{ background: 'none', border: 'none', color: '#EF4444', cursor: deletingTeamId === team._id && deleting ? 'not-allowed' : 'pointer', fontSize: 18 }} title="Delete" disabled={deletingTeamId === team._id && deleting}><span role="img" aria-label="delete">🗑️</span></button>
                 </div>
               </div>
               <div style={{ color: '#9CA3AF', fontSize: 14, marginBottom: 16 }}>{team.description}</div>
-              <div style={{ color: '#6B7280', fontSize: 13, marginBottom: 8 }}>Members (0)</div>
+              <div style={{ color: '#6B7280', fontSize: 13, marginBottom: 8 }}>Members ({team.memberCount})</div>
               <div style={{ background: '#23272F', borderRadius: 8, minHeight: 48, padding: 8, color: '#9CA3AF', fontSize: 14 }}>
-                <span>No members yet</span>
+                {team.memberCount === 0 ? (
+                  <span>No members yet</span>
+                ) : (
+                  <span>{team.memberCount} members</span>
+                )}
               </div>
             </div>
           ))}

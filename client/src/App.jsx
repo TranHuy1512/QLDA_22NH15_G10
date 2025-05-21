@@ -2,12 +2,13 @@ import styled from "@emotion/styled"
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
+import { Toaster } from 'react-hot-toast';
 import Register from './pages/Register';
 import Home from './components/Home';
 import VerifyEmail from './components/VerifyEmail';
-import Login from "./pages/Login.jsx"
-import Dashboard from "./pages/Dashboard.jsx"
-import AuthProvider from "./context/authContext.jsx";
+import Login from "./pages/Login"
+import Dashboard from "./pages/Dashboard"
+import AuthProvider from "./context/authContext";
 import backgroundImage from "./assets/background.jpg"
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
@@ -34,6 +35,7 @@ function App() {
     return (
         <ThemeProvider theme={theme}>
             <CssBaseline />
+            <Toaster position="top-right" />
         <Router>
             <AuthProvider>
                 <GlobalStyle>
@@ -42,9 +44,13 @@ function App() {
                         <Route path="/" element={<Home />} />
                         <Route path="/register" element={<Register />} />
                         <Route path="/verify-email" element={<VerifyEmail />} />
-                            <Route path="/forgot-password" element={<ForgotPassword />} />
-                            <Route path="/reset-password" element={<ResetPassword />} />
-                            <Route path="/dashboard" element={<Dashboard />} />
+                        <Route path="/forgot-password" element={<ForgotPassword />} />
+                        <Route path="/reset-password" element={<ResetPassword />} />
+                        <Route path="/dashboard" element={<Dashboard />} />
+                        <Route path="/board" element={<Dashboard />} />
+                        <Route path="/teams" element={<Dashboard />} />
+                        <Route path="/teams/:teamId" element={<Dashboard />} />
+                        <Route path="/settings" element={<Dashboard />} />
                     </Routes>
                 </GlobalStyle>
             </AuthProvider>
