@@ -91,6 +91,11 @@ const TeamMembers = ({ teamId }) => {
     }
   };
 
+  const handleRoleChange = (memberId, newRole) => {
+    console.log(`Attempting to change role for member ${memberId} to ${newRole}`);
+    // TODO: Implement API call to update member role
+  };
+
   const handleCheckboxChange = (userId) => {
     setSelectedUserIds(prevSelected =>
       prevSelected.includes(userId)
@@ -313,27 +318,46 @@ const TeamMembers = ({ teamId }) => {
                   <p style={{ fontWeight: '500', color: '#1F2937' }}>{member.user.name}</p>
                   <p style={{ fontSize: '0.75rem', color: '#6B7280' }}>{member.user.email}</p>
                 </div>
-                <button
-                  onClick={() => handleRemoveMember(member.user._id)}
-                  style={{
-                    padding: '0.5rem 1rem',
-                    borderRadius: '0.375rem',
-                    backgroundColor: '#DC2626',
-                    color: '#ffffff',
-                    fontSize: '0.75rem',
-                    fontWeight: '500',
-                    border: 'none',
-                    cursor: 'pointer',
-                    transition: 'background-color 0.3s ease, transform 0.2s ease',
-                    boxShadow: '0 2px 4px 0 rgba(0, 0, 0, 0.1)',
-                  }}
-                  onMouseOver={(e) => (e.target.style.backgroundColor = '#B91C1C')}
-                  onMouseOut={(e) => (e.target.style.backgroundColor = '#DC2626')}
-                  onFocus={(e) => (e.target.style.backgroundColor = '#B91C1C')}
-                  onBlur={(e) => (e.target.style.backgroundColor = '#DC2626')}
-                >
-                  Remove
-                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  {/* Role Selection */}
+                  <select
+                    value={member.role}
+                    onChange={(e) => handleRoleChange(member._id, e.target.value)}
+                    style={{
+                      padding: '0.5rem',
+                      borderRadius: '0.375rem',
+                      border: '1px solid #D1D5DB',
+                      backgroundColor: '#F9FAFB',
+                      fontSize: '0.75rem',
+                      color: '#1F2937',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <option value="member">Member</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                  <button
+                    onClick={() => handleRemoveMember(member.user._id)}
+                    style={{
+                      padding: '0.5rem 1rem',
+                      borderRadius: '0.375rem',
+                      backgroundColor: '#DC2626',
+                      color: '#ffffff',
+                      fontSize: '0.75rem',
+                      fontWeight: '500',
+                      border: 'none',
+                      cursor: 'pointer',
+                      transition: 'background-color 0.3s ease, transform 0.2s ease',
+                      boxShadow: '0 2px 4px 0 rgba(0, 0, 0, 0.1)',
+                    }}
+                    onMouseOver={(e) => (e.target.style.backgroundColor = '#B91C1C')}
+                    onMouseOut={(e) => (e.target.style.backgroundColor = '#DC2626')}
+                    onFocus={(e) => (e.target.style.backgroundColor = '#B91C1C')}
+                    onBlur={(e) => (e.target.style.backgroundColor = '#DC2626')}
+                  >
+                    Remove
+                  </button>
+                </div>
               </div>
             ))
           ) : (
