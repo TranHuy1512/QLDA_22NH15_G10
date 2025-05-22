@@ -44,12 +44,12 @@ const TaskCard = ({ task, onStatusChange, onEdit, onDelete }) => {
 
   return (
     <div style={{
-      backgroundColor: '#1F2937',
+      backgroundColor: '#111722',
       borderRadius: '0.5rem',
       padding: '1.25rem',
       marginBottom: '1rem',
       position: 'relative',
-      border: '1px solid #374151',
+      border: '1px solid rgba(255, 255, 255, 0.1)',
       transition: 'all 0.2s',
       ':hover': {
         borderColor: '#4B5563',

@@ -94,12 +94,15 @@ const TaskPage = () => {
 
     const handleStatusChange = async (taskId, newStatus) => {
         try {
-            // Optimistically update UI
-            setTasks(prev => prev.map(task =>
-                task._id === taskId ? { ...task, status: newStatus } : task
-            ));
-            // Send update to backend
-            await axiosInstance.patch(`/api/tasks/${taskId}/status`, { status: newStatus });
+            const response = await axiosInstance.put(`/api/tasks/${taskId}`, { status: newStatus });
+            if (response.data.success) {
+                // Update UI with the updated task from backend
+                setTasks(prev => prev.map(task =>
+                    task._id === taskId ? response.data.data : task
+                ));
+            } else {
+                setError('Failed to update status: ' + response.data.message);
+            }
         } catch (error) {
             console.error('Error updating status:', error);
             setError(error.response?.data?.message || 'Failed to update status');

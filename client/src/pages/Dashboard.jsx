@@ -142,7 +142,8 @@ const Dashboard = () => {
     <div style={{
       minHeight: '100vh',
       backgroundColor: '#111827',
-      display: 'flex'
+      display: 'flex',
+      fontFamily: 'Inter, sans-serif',
     }}>
       {/* Sidebar */}
       <div style={{
