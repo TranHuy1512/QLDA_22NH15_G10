@@ -15,4 +15,7 @@ router.patch('/:id', auth, userController.updateUser);
 // Delete user
 router.delete('/:id', auth, userController.deleteUser);
 
-module.exports = router; 
+// Add a route to update the user's profile
+router.put('/profile', auth, userController.updateUserProfile);
+
+module.exports = router;

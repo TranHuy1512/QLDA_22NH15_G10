@@ -4,10 +4,11 @@ import TaskPage from './TaskPage';
 import KanbanBoard from './KanbanBoard';
 import CreateTeam from '../components/CreateTeam';
 import TeamsPage from './TeamsPage';
+import ProfilePage from './ProfilePage';
 import axiosInstance from '../utils/axios';
 
 const Dashboard = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const [activeItem, setActiveItem] = useState('tasks');
   const [showCreateTeam, setShowCreateTeam] = useState(false);
   const [teams, setTeams] = useState([]);
@@ -108,6 +109,8 @@ const Dashboard = () => {
             </div>
           </div>
         );
+      case 'profile':
+        return <ProfilePage />;
       default:
         if (activeItem.startsWith('team-')) {
           const teamId = activeItem.replace('team-', '');
@@ -177,6 +180,11 @@ const Dashboard = () => {
           name="Teams"
           id="teams"
           icon={<span>👥</span>}
+        />
+        <SidebarItem
+          name="Profile"
+          id="profile"
+          icon={<span>👤</span>}
         />
         <SidebarItem
           name="Settings"
@@ -278,6 +286,25 @@ const Dashboard = () => {
               onClick={() => setShowCreateTeam(true)}
             />
           </div>
+        </div>
+
+        <div style={{ marginTop: 'auto', paddingTop: '1rem', borderTop: '1px solid #374151' }}>
+          <button
+            onClick={logout}
+            style={{
+              width: '100%',
+              padding: '0.75rem',
+              backgroundColor: '#EF4444',
+              color: 'white',
+              border: 'none',
+              borderRadius: '0.375rem',
+              cursor: 'pointer',
+              textAlign: 'center',
+              fontWeight: 'bold',
+            }}
+          >
+            Logout
+          </button>
         </div>
       </div>
 
