@@ -51,6 +51,7 @@ function App() {
                         <Route path="/teams" element={<Dashboard />} />
                         <Route path="/teams/:teamId" element={<Dashboard />} />
                         <Route path="/settings" element={<Dashboard />} />
+                        <Route path="/profile" element={<Dashboard />} />
                     </Routes>
                 </GlobalStyle>
             </AuthProvider>

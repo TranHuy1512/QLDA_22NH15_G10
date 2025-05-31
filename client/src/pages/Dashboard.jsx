@@ -6,11 +6,10 @@ import TeamsPage from './TeamsPage';
 import ProfilePage from './ProfilePage';
 import TeamManagement from './TeamManagement';
 import axiosInstance from '../utils/axios';
-import { useLocation, useParams, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 const Dashboard = () => {
   const { user, logout } = useAuth();
-  const { user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [activeItem, setActiveItem] = useState('tasks');
@@ -90,8 +89,9 @@ const Dashboard = () => {
       setActiveItem('teams');
     } else if (location.pathname === '/board') {
       setActiveItem('board');
+    } else if (location.pathname === '/profile') {
+      setActiveItem('profile');
     }
-
   }, [location.pathname]);
 
   // Fetch all users when the modal is shown for creating a new team
@@ -367,6 +367,7 @@ const Dashboard = () => {
           name="Profile"
           id="profile"
           icon={<span>👤</span>}
+          route="/profile"
         />
         <SidebarItem
           name="Settings"
@@ -626,3 +627,4 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+
