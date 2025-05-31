@@ -1,14 +1,40 @@
 const express = require('express');
 const router = express.Router();
 const Team = require("../models/Team");
+const GroupMember = require("../models/GroupMember");
+const { auth } = require('../middleware/auth');
+const {
+  addTeamMember,
+  removeTeamMember,
+  getTeamMembers
+} = require('../controllers/teamMemberController');
 
-// GET /api/teams - Get all teams
+// Apply auth middleware to all routes
+router.use(auth);
+
+// GET /api/teams - Get all teams the user is a member of
 router.get('/', async (req, res) => {
   try {
-    const teams = await Team.find().sort({ createdAt: -1 });
+    const userId = req.user.userId; // Correctly get the logged-in user's ID from req.user.userId
+    
+    // Find all group memberships for the user
+    const memberships = await GroupMember.find({ user: userId });
+
+    // Extract the team IDs from the memberships
+    const teamIds = memberships.map(membership => membership.team);
+
+    // Find teams that match the extracted team IDs and sort them
+    const teams = await Team.find({ _id: { $in: teamIds } }).sort({ createdAt: -1 });
+    
+    // Fetch member count for each team
+    const teamsWithMemberCount = await Promise.all(teams.map(async (team) => {
+      const memberCount = await GroupMember.countDocuments({ team: team._id });
+      return { ...team.toObject(), memberCount };
+    }));
+
     res.json({
       success: true,
-      data: teams
+      data: teamsWithMemberCount
     });
   } catch (error) {
     console.error('Error fetching teams:', error);
@@ -23,7 +49,8 @@ router.get('/', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     console.log('Received team creation request:', req.body);
-    const { name, description } = req.body;
+    const { name, description, members } = req.body; // Destructure members from body
+    const creatorId = req.user.userId; // Get the creator's ID
 
     // Validate required fields
     if (!name || !description) {
@@ -39,6 +66,26 @@ router.post('/', async (req, res) => {
       name,
       description
     });
+
+    // Add the creator as an admin member of the team
+    await GroupMember.create({
+      team: team._id,
+      user: creatorId, // Use creatorId
+      role: 'admin' // Set the creator's role to admin
+    });
+
+    // Add selected members (excluding the creator if included)
+    if (members && Array.isArray(members)) {
+      const membersToAdd = members.filter(userId => userId !== creatorId); // Exclude creator
+      const memberDocs = membersToAdd.map(userId => ({
+        team: team._id,
+        user: userId,
+        role: 'member' // Set role for added members
+      }));
+      if (memberDocs.length > 0) {
+        await GroupMember.insertMany(memberDocs);
+      }
+    }
 
     console.log('Team created successfully:', team);
     res.status(201).json({
@@ -104,5 +151,10 @@ router.delete('/:id', async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 });
+
+// Team member management routes
+router.post('/:teamId/members', addTeamMember);
+router.delete('/:teamId/members/:userId', removeTeamMember);
+router.get('/:teamId/members', getTeamMembers);
 
 module.exports = router;
