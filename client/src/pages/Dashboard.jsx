@@ -3,11 +3,13 @@ import { useAuth } from '../context/authContext';
 import TaskPage from './TaskPage';
 import KanbanBoard from './KanbanBoard';
 import TeamsPage from './TeamsPage';
+import ProfilePage from './ProfilePage';
 import TeamManagement from './TeamManagement';
 import axiosInstance from '../utils/axios';
 import { useLocation, useParams, useNavigate } from 'react-router-dom';
 
 const Dashboard = () => {
+  const { user, logout } = useAuth();
   const { user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
@@ -307,6 +309,8 @@ const Dashboard = () => {
             </div>
           </div>
         );
+      case 'profile':
+        return <ProfilePage />;
       default:
         if (activeItem.startsWith('team-')) {
            const teamIdFromActiveItem = activeItem.replace('team-', '');
@@ -358,6 +362,11 @@ const Dashboard = () => {
           id="teams"
           icon={<span>👥</span>}
            route="/teams"
+        />
+        <SidebarItem
+          name="Profile"
+          id="profile"
+          icon={<span>👤</span>}
         />
         <SidebarItem
           name="Settings"
@@ -473,6 +482,25 @@ const Dashboard = () => {
               </div>
             )}
           </div>
+        </div>
+
+        <div style={{ marginTop: 'auto', paddingTop: '1rem', borderTop: '1px solid #374151' }}>
+          <button
+            onClick={logout}
+            style={{
+              width: '100%',
+              padding: '0.75rem',
+              backgroundColor: '#EF4444',
+              color: 'white',
+              border: 'none',
+              borderRadius: '0.375rem',
+              cursor: 'pointer',
+              textAlign: 'center',
+              fontWeight: 'bold',
+            }}
+          >
+            Logout
+          </button>
         </div>
       </div>
 

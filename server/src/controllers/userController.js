@@ -90,7 +90,45 @@ const userController = {
                 message: 'Failed to delete user'
             });
         }
-    }
+    },
+
+    // Update user profile
+    updateUserProfile: async (req, res) => {
+        try {
+            const { name, oldPassword, password } = req.body;
+            const user = await User.findById(req.user.userId);
+
+            if (!user) {
+                return res.status(404).json({ success: false, message: 'User not found' });
+            }
+
+            // If the user is updating their password, verify the old password
+            if (password) {
+                if (!oldPassword) {
+                    return res.status(400).json({ success: false, message: 'Current password is required to update the password' });
+                }
+
+                const isMatch = await user.comparePassword(oldPassword);
+                if (!isMatch) {
+                    return res.status(400).json({ success: false, message: 'Incorrect current password' });
+                }
+
+                user.password = password;
+            }
+
+            // Update the user's name if provided
+            if (name) {
+                user.name = name;
+            }
+
+            await user.save();
+
+            res.json({ success: true, message: 'Profile updated successfully' });
+        } catch (error) {
+            console.error('Error updating user profile:', error);
+            res.status(500).json({ success: false, message: 'Failed to update profile' });
+        }
+    },
 };
 
-module.exports = userController; 
+module.exports = userController;
