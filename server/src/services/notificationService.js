@@ -1,5 +1,6 @@
 const nodemailer = require('nodemailer');
 const User = require('../models/User');
+const Notification = require('../models/Notification');
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
@@ -49,6 +50,28 @@ const sendTaskAssignmentNotification = async (task, assignees) => {
   }
 };
 
+const sendTeamMemberNotification = async (team, user, action) => {
+  try {
+    const message = action === 'add' 
+      ? `You have been added to team: ${team.name}`
+      : `You have been removed from team: ${team.name}`;
+
+    const notification = new Notification({
+      user: user._id,
+      type: 'team_member',
+      message,
+      relatedTeam: team._id
+    });
+
+    await notification.save();
+    return notification;
+  } catch (error) {
+    console.error('Error sending team member notification:', error);
+    throw error;
+  }
+};
+
 module.exports = {
-  sendTaskAssignmentNotification
+  sendTaskAssignmentNotification,
+  sendTeamMemberNotification
 }; 
