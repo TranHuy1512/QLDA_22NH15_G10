@@ -154,7 +154,101 @@ router.delete('/:id', async (req, res) => {
 
 // Team member management routes
 router.post('/:teamId/members', addTeamMember);
-router.delete('/:teamId/members/:userId', removeTeamMember);
+router.delete('/:teamId/members/:userId', async (req, res) => {
+  try {
+    const { teamId, userId } = req.params;
+    const loggedInUserId = req.user.userId; // Get logged-in user's ID
+
+    // Check if the logged-in user is an admin of the team
+    const adminMember = await GroupMember.findOne({ team: teamId, user: loggedInUserId, role: 'admin' });
+
+    if (!adminMember) {
+      return res.status(403).json({
+        success: false,
+        message: 'Only team admins can remove members'
+      });
+    }
+
+    // Proceed with member removal if user is an admin
+    const removedMember = await GroupMember.findOneAndDelete({
+      team: teamId,
+      user: userId,
+    });
+
+    if (!removedMember) {
+      return res.status(404).json({
+        success: false,
+        message: 'Team member not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Member removed successfully'
+    });
+  } catch (error) {
+    console.error('Error removing member:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to remove member'
+    });
+  }
+});
 router.get('/:teamId/members', getTeamMembers);
+
+// PUT /api/teams/:teamId/members/:memberId/role - Update member role
+router.put('/:teamId/members/:memberId/role', async (req, res) => {
+  try {
+    const { teamId, memberId } = req.params;
+    const { role } = req.body;
+    const loggedInUserId = req.user.userId; // Get logged-in user's ID
+    const allowedRoles = ['member', 'admin', 'guest']; // Define allowed roles
+
+    // Check if the logged-in user is an admin of the team
+    const adminMember = await GroupMember.findOne({ team: teamId, user: loggedInUserId, role: 'admin' });
+
+    if (!adminMember) {
+      return res.status(403).json({
+        success: false,
+        message: 'Only team admins can change roles'
+      });
+    }
+
+    // Validate the new role
+    if (!role || !allowedRoles.includes(role)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid role specified. Allowed roles are: ${allowedRoles.join(', ')}`
+      });
+    }
+
+    // Find the group member and update their role
+    const updatedMember = await GroupMember.findOneAndUpdate(
+      { team: teamId, user: memberId }, // Find member by team and user ID
+      { role: role }, // Update the role
+      { new: true } // Return the updated document
+    ).populate('user', 'name email'); // Optionally populate user info for response
+
+    if (!updatedMember) {
+      return res.status(404).json({
+        success: false,
+        message: 'Team member not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Member role updated successfully',
+      data: updatedMember
+    });
+
+  } catch (error) {
+    console.error('Error updating member role:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to update member role'
+    });
+  }
+});
 
 module.exports = router;

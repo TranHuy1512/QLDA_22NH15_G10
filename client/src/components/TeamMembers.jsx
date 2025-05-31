@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import axios from '../utils/axios';
+import { useAuth } from '../context/authContext';
 
 const TeamMembers = ({ teamId }) => {
+  const { user: loggedInUser } = useAuth();
   const [members, setMembers] = useState([]);
   const [allUsers, setAllUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -86,8 +88,37 @@ const TeamMembers = ({ teamId }) => {
       toast.success('Member removed successfully');
       fetchMembers();
     } catch (error) {
-      toast.error('Failed to remove member');
       console.error('Error removing member:', error);
+      if (error.response && error.response.status === 403) {
+        toast.error('You do not have permission to remove members.');
+      } else {
+        toast.error('Failed to remove member');
+      }
+    }
+  };
+
+  const handleRoleChange = async (userId, newRole) => {
+    try {
+      // Optimistically update the UI
+      setMembers(members.map(member =>
+        member.user._id === userId ? { ...member, role: newRole } : member
+      ));
+
+      const response = await axios.put(`/api/teams/${teamId}/members/${userId}/role`, { role: newRole });
+
+      if (response.data.success) {
+        toast.success('Member role updated successfully');
+        // No need to fetchMembers() again if optimistic update is correct
+      } else {
+        toast.error(response.data.message || 'Failed to update member role');
+        // Revert UI change if API call failed
+        fetchMembers();
+      }
+    } catch (error) {
+      toast.error('Failed to update member role');
+      console.error('Error updating member role:', error);
+      // Revert UI change on error
+      fetchMembers();
     }
   };
 
@@ -106,6 +137,10 @@ const TeamMembers = ({ teamId }) => {
 
   const currentMemberIds = members.map(member => member.user._id);
   const hasNewSelectedMembers = selectedUserIds.some(userId => !currentMemberIds.includes(userId));
+
+  // Determine if the current user is an admin
+  const currentUserMember = members.find(member => member.user._id === loggedInUser?._id);
+  const isCurrentUserAdmin = currentUserMember && currentUserMember.role === 'admin';
 
   if (loading || loadingUsers) {
     return (
@@ -313,27 +348,48 @@ const TeamMembers = ({ teamId }) => {
                   <p style={{ fontWeight: '500', color: '#1F2937' }}>{member.user.name}</p>
                   <p style={{ fontSize: '0.75rem', color: '#6B7280' }}>{member.user.email}</p>
                 </div>
-                <button
-                  onClick={() => handleRemoveMember(member.user._id)}
-                  style={{
-                    padding: '0.5rem 1rem',
-                    borderRadius: '0.375rem',
-                    backgroundColor: '#DC2626',
-                    color: '#ffffff',
-                    fontSize: '0.75rem',
-                    fontWeight: '500',
-                    border: 'none',
-                    cursor: 'pointer',
-                    transition: 'background-color 0.3s ease, transform 0.2s ease',
-                    boxShadow: '0 2px 4px 0 rgba(0, 0, 0, 0.1)',
-                  }}
-                  onMouseOver={(e) => (e.target.style.backgroundColor = '#B91C1C')}
-                  onMouseOut={(e) => (e.target.style.backgroundColor = '#DC2626')}
-                  onFocus={(e) => (e.target.style.backgroundColor = '#B91C1C')}
-                  onBlur={(e) => (e.target.style.backgroundColor = '#DC2626')}
-                >
-                  Remove
-                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  {/* Role Selection */}
+                  <select
+                    value={member.role}
+                    onChange={(e) => handleRoleChange(member.user._id, e.target.value)}
+                    disabled={!isCurrentUserAdmin}
+                    style={{
+                      padding: '0.5rem',
+                      borderRadius: '0.375rem',
+                      border: '1px solid #D1D5DB',
+                      backgroundColor: '#F9FAFB',
+                      fontSize: '0.75rem',
+                      color: '#1F2937',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <option value="member">Member</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                  <button
+                    onClick={() => handleRemoveMember(member.user._id)}
+                    disabled={!isCurrentUserAdmin}
+                    style={{
+                      padding: '0.5rem 1rem',
+                      borderRadius: '0.375rem',
+                      backgroundColor: '#DC2626',
+                      color: '#ffffff',
+                      fontSize: '0.75rem',
+                      fontWeight: '500',
+                      border: 'none',
+                      cursor: 'pointer',
+                      transition: 'background-color 0.3s ease, transform 0.2s ease',
+                      boxShadow: '0 2px 4px 0 rgba(0, 0, 0, 0.1)',
+                    }}
+                    onMouseOver={(e) => (e.target.style.backgroundColor = '#B91C1C')}
+                    onMouseOut={(e) => (e.target.style.backgroundColor = '#DC2626')}
+                    onFocus={(e) => (e.target.style.backgroundColor = '#B91C1C')}
+                    onBlur={(e) => (e.target.style.backgroundColor = '#DC2626')}
+                  >
+                    Remove
+                  </button>
+                </div>
               </div>
             ))
           ) : (
