@@ -1,13 +1,16 @@
 const express = require('express');
 const router = express.Router();
 const { auth } = require('../middleware/auth');
+const { body, validationResult } = require('express-validator');
 const {
   createTask,
   updateTaskAssignees,
   getTasks,
   getTaskById,
   updateTask,
-  deleteTask
+  deleteTask,
+  addTaskComment,
+  getTaskComments
 } = require('../controllers/taskController');
 
 // Apply auth middleware to all routes
@@ -30,5 +33,11 @@ router.put('/:taskId', updateTask);
 
 // Delete task
 router.delete('/:taskId', deleteTask);
+
+// Comment routes for a specific task
+router.post('/:taskId/comments', [
+  body('content').trim().notEmpty().withMessage('Comment content is required')
+], addTaskComment);
+router.get('/:taskId/comments', getTaskComments);
 
 module.exports = router; 
