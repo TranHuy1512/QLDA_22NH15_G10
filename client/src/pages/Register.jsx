@@ -11,7 +11,7 @@ import {
   Title,
   Button,
   StyledLink
-} from '../components/TaskComponents/FormComponents.jsx';
+} from '../components/FormComponents.jsx';
 
 // Hardcode API URL for now since environment variable is not working
 const API_URL = 'http://localhost:5000';

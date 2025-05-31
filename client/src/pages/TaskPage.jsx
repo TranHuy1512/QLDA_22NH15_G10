@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled from '@emotion/styled'
-import {Title, Label, Button} from '../components/TaskComponents/FormComponents.jsx'
+import {Title, Label, Button} from '../components/FormComponents.jsx'
 import axiosInstance from '../utils/axios';
 import FormCreateTask from '../components/TaskComponents/FormCreateTask.jsx';
 import TaskCard from '../components/TaskCard';

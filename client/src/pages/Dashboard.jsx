@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/authContext';
+import SidebarItems from "../components/SidebarItems";
 import TaskPage from './TaskPage';
 import KanbanBoard from './KanbanBoard';
 import TeamsPage from './TeamsPage';
@@ -93,7 +94,6 @@ const Dashboard = () => {
       setActiveItem('profile');
     }
   }, [location.pathname]);
-
   // Fetch all users when the modal is shown for creating a new team
   useEffect(() => {
     if (showModal && !editingTeam) {
@@ -101,41 +101,6 @@ const Dashboard = () => {
     }
   }, [showModal, editingTeam, fetchUsers]);
 
-  const SidebarItem = ({ name, id, icon, route }) => {
-    const handleClick = () => {
-      setActiveItem(id);
-      if (route) {
-        navigate(route);
-      }
-    };
-
-    return (
-      <div
-        onClick={handleClick}
-        style={{
-          padding: '1rem',
-          color: activeItem === id || (route && location.pathname.startsWith(route)) ? 'white' : '#9CA3AF',
-          backgroundColor: activeItem === id || (route && location.pathname.startsWith(route)) ? '#374151' : 'transparent',
-          cursor: 'pointer',
-          borderRadius: '0.375rem',
-          marginBottom: '0.5rem',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.75rem',
-          transition: 'all 0.2s',
-          ':hover': {
-            backgroundColor: '#374151',
-            color: 'white'
-          }
-        }}
-      >
-        {icon}
-        <span style={{ flex: 1 }}>{name}</span>
-      </div>
-    );
-  };
-
-  // Handle checkbox change for new team members
   const handleNewTeamCheckboxChange = (userId) => {
     setSelectedNewTeamUserIds(prevSelected =>
       prevSelected.includes(userId)
@@ -341,40 +306,11 @@ const Dashboard = () => {
             Dashboard
           </h2>
           <p style={{ color: '#9CA3AF', fontSize: '0.875rem' }}>
-            {user?.email}
+            {user?.name}
           </p>
         </div>
 
-        <SidebarItem
-          name="Tasks"
-          id="tasks"
-          icon={<span>📋</span>}
-          route="/dashboard"
-        />
-        <SidebarItem
-          name="Board"
-          id="board"
-          icon={<span>🗂️</span>}
-           route="/board"
-        />
-        <SidebarItem
-          name="Teams"
-          id="teams"
-          icon={<span>👥</span>}
-           route="/teams"
-        />
-        <SidebarItem
-          name="Profile"
-          id="profile"
-          icon={<span>👤</span>}
-          route="/profile"
-        />
-        <SidebarItem
-          name="Settings"
-          id="settings"
-          icon={<span>⚙️</span>}
-           route="/settings"
-        />
+        <SidebarItems activeItem={activeItem} navigate={navigate} />
 
         <div style={{ 
           marginTop: '2rem',

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Button } from './TaskComponents/FormComponents.jsx';
+import { Button } from './FormComponents.jsx';
 import { useAuth } from '../context/authContext.jsx';
 
 const Home = () => {
