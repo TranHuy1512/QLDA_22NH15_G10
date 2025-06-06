@@ -15,6 +15,12 @@ const sidebarItems = [
         route: '/board',
     },
     {
+        name: 'Gantt Chart',
+        id: 'gantt',
+        icon: <span>📊</span>,
+        route: '/gantt',
+    },
+    {
         name: 'Teams',
         id: 'teams',
         icon: <span>👥</span>,

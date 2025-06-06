@@ -8,6 +8,7 @@ import ProfilePage from './ProfilePage';
 import TeamManagement from './TeamManagement';
 import axiosInstance from '../utils/axios';
 import { useLocation, useNavigate } from 'react-router-dom';
+import GanttChart from './GanttChart';
 
 const Dashboard = () => {
   const { user, logout } = useAuth();
@@ -92,6 +93,8 @@ const Dashboard = () => {
       setActiveItem('board');
     } else if (location.pathname === '/profile') {
       setActiveItem('profile');
+    } else if (location.pathname === '/gantt') {
+      setActiveItem('gantt');
     }
   }, [location.pathname]);
   // Fetch all users when the modal is shown for creating a new team
@@ -276,6 +279,8 @@ const Dashboard = () => {
         );
       case 'profile':
         return <ProfilePage />;
+      case 'gantt':
+        return <GanttChart />;
       default:
         if (activeItem.startsWith('team-')) {
            const teamIdFromActiveItem = activeItem.replace('team-', '');

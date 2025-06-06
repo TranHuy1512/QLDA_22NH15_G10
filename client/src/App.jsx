@@ -51,6 +51,8 @@ function App() {
                             <Route path="/teams/:teamId" element={<Dashboard />} />
                             <Route path="/settings" element={<Dashboard />} />
                             <Route path="/profile" element={<Dashboard />} />
+                            <Route path="/gantt" element={<Dashboard />} />
+                            {/* Add more routes as needed */}
                         </Routes>
                     </GlobalStyle>
                 </AuthProvider>
