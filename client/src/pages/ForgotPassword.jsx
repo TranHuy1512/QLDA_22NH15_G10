@@ -1,20 +1,20 @@
 import {useState} from "react";
-import {useNavigate} from "react-router-dom";
 import axios from "axios";
 import BlurOverlay from "../components/BlurOverlay.jsx";
 import {ErrorMessage, FormContainer, FormWrapper, Input, Label, Title, Button, StyledLink} from "../components/FormComponents.jsx";
 import {Link} from "react-router-dom";
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 function ForgotPassword() {
     const [email, setEmail] = useState('');
     const [message, setMessage] = useState('');
     const [error, setError] = useState('');
-    const navigate = useNavigate();
+
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const response = await axios.post('http://localhost:5000/api/forgot-password', { email });
+            const response = await axios.post(API_URL + '/forgot-password', { email });
             setMessage(response.data.message);
             setError('');
         } catch (err) {

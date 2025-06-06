@@ -205,10 +205,11 @@ const MessagesPage = () => {
   const messagesEndRef = useRef(null);
   const socketRef = useRef();
 
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
   // Initialize socket connection
   useEffect(() => {
     if (user) {
-      socketRef.current = io('http://localhost:5000', {
+      socketRef.current = io(API_URL, {
         withCredentials: true,
         transports: ['websocket']
       });

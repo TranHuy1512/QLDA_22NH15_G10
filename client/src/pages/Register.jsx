@@ -14,7 +14,7 @@ import {
 } from '../components/FormComponents.jsx';
 
 // Hardcode API URL for now since environment variable is not working
-const API_URL = 'http://localhost:5000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
 const Register = () => {
   const navigate = useNavigate();
