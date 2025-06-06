@@ -1,64 +1,86 @@
-require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const router = require('./routes/auth');
-const teamRoutes = require('./routes/teamRoutes');
-const taskRoutes = require('./routes/taskRoutes');
-const userRoutes = require('./routes/userRoutes');
+const http = require('http');
+const { Server } = require('socket.io');
+require('dotenv').config();
 
 const app = express();
+const server = http.createServer(app);
+
+// Socket.IO setup
+const io = new Server(server, {
+  cors: {
+    origin: "http://localhost:3000",
+    methods: ["GET", "POST"],
+    credentials: true
+  }
+});
+
+// Store user rooms
+const userRooms = new Map();
 
 // Middleware
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://192.168.1.95:5173'],
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'], // Added PATCH
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  origin: process.env.CLIENT_URL || 'http://localhost:5173',
   credentials: true
 }));
-
-// Parse JSON bodies BEFORE debug logging
 app.use(express.json());
 
-// Debug middleware
-app.use((req, res, next) => {
-  console.log('Incoming request:', {
-    method: req.method,
-    url: req.url,
-    headers: req.headers,
-    body: req.body
-  });
-  next();
-});
+// Routes
+const authRoutes = require('./routes/auth');
+const userRoutes = require('./routes/userRoutes');
+const teamRoutes = require('./routes/teamRoutes');
+const taskRoutes = require('./routes/taskRoutes');
+const messageRoutes = require('./routes/messages');
 
-// Routes - Mount auth routes at /api
-app.use('/api', router);
+// Mount routes
+app.use('/api', authRoutes);
+app.use('/api/users', userRoutes);
 app.use('/api/teams', teamRoutes);
 app.use('/api/tasks', taskRoutes);
-app.use('/api/users', userRoutes);
+app.use('/api/messages', messageRoutes);
 
-// Debug route
-app.get('/debug', (req, res) => {
-  console.log('Debug route hit');
-  res.json({
-    message: 'Debug route working',
-    routes: app._router.stack
-      .filter(r => r.route)
-      .map(r => ({
-        path: r.route.path,
-        methods: Object.keys(r.route.methods)
-      }))
+// Socket.IO connection handling
+io.on('connection', (socket) => {
+  console.log('User connected:', socket.id);
+
+  socket.on('join', (userId) => {
+    console.log('User joined room:', userId);
+    userRooms.set(userId, socket.id);
+    socket.join(userId);
+  });
+
+  socket.on('sendMessage', ({ receiverId, message, senderId }) => {
+    console.log('Message sent:', { receiverId, senderId, message });
+    
+    // Emit to receiver's room
+    if (receiverId) {
+      io.to(receiverId).emit('newMessage', message);
+    }
+
+    // Emit back to sender's room for confirmation
+    io.to(senderId).emit('newMessage', message);
+  });
+
+  socket.on('disconnect', () => {
+    console.log('User disconnected:', socket.id);
+    // Remove user from rooms map
+    for (const [userId, socketId] of userRooms.entries()) {
+      if (socketId === socket.id) {
+        userRooms.delete(userId);
+        break;
+      }
+    }
   });
 });
 
-// Connect to MongoDB
+// MongoDB connection
 mongoose.connect(process.env.MONGODB_URI)
-  .then(() => console.log('Connected to MongoDB'))
-  .catch(err => console.error('MongoDB connection error:', err));
-
-// Start server
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server is running on http://0.0.0.0:${PORT}`);
-  console.log(`Local: http://localhost:${PORT}`);
-});
+  .then(() => {
+    const PORT = process.env.PORT || 5000;
+    server.listen(PORT, () => {});
+  })
+  .catch((error) => {
+    process.exit(1);
+  });
