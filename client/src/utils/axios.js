@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Create axios instance with base URL
 const instance = axios.create({
-  baseURL: 'http://localhost:5000', // Your backend server URL
+  baseURL: import.meta.env.VITE_API_URL , // Your backend server URL
   headers: {
     'Content-Type': 'application/json'
   }

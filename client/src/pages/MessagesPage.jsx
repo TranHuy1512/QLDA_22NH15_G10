@@ -107,6 +107,7 @@ const ChatMessages = styled.div`
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  background: #111827;
 `;
 
 const MessageInput = styled.div`
@@ -151,24 +152,44 @@ const SendButton = styled.button`
   }
 `;
 
+const MessageGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  margin: 0.5rem 0;
+  width: 100%;
+  ${props => props.isOwn ? 'align-items: flex-end;' : 'align-items: flex-start;'}
+`;
+
 const Message = styled.div`
   max-width: 70%;
   padding: 0.75rem 1rem;
-  border-radius: 0.5rem;
+  border-radius: 1rem;
   font-size: 0.875rem;
-  margin: 0.5rem 0;
+  position: relative;
+  display: flex;
+  flex-direction: column;
   
   ${props => props.isOwn ? `
-    align-self: flex-end;
     background: #3B82F6;
     color: white;
     border-bottom-right-radius: 0.25rem;
   ` : `
-    align-self: flex-start;
     background: #374151;
     color: white;
     border-bottom-left-radius: 0.25rem;
   `}
+`;
+
+const MessageContent = styled.div`
+  word-break: break-word;
+  line-height: 1.4;
+`;
+
+const MessageTime = styled.div`
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+  opacity: 0.8;
+  text-align: ${props => props.isOwn ? 'right' : 'left'};
 `;
 
 const MessagesPage = () => {
@@ -322,7 +343,40 @@ const MessagesPage = () => {
   });
 
   const isOwnMessage = (message) => {
-    return message.senderId === (user.userId || user._id);
+    const userId = user.userId || user._id;
+    return message.senderId._id === userId;
+  };
+
+  const formatTime = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
+  const groupMessages = (messages) => {
+    const groups = [];
+    let currentGroup = [];
+    let currentSender = null;
+
+    messages.forEach((message, index) => {
+      const isOwn = isOwnMessage(message);
+      
+      if (currentSender === null) {
+        currentSender = isOwn;
+        currentGroup.push(message);
+      } else if (currentSender === isOwn) {
+        currentGroup.push(message);
+      } else {
+        groups.push({ messages: currentGroup, isOwn: currentSender });
+        currentGroup = [message];
+        currentSender = isOwn;
+      }
+
+      if (index === messages.length - 1) {
+        groups.push({ messages: currentGroup, isOwn: currentSender });
+      }
+    });
+
+    return groups;
   };
 
   if (!user) {
@@ -399,13 +453,26 @@ const MessagesPage = () => {
               </ChatName>
             </ChatHeader>
             <ChatMessages>
-              {messages.map(message => (
-                <Message
-                  key={message._id}
-                  isOwn={isOwnMessage(message)}
-                >
-                  {message.content}
-                </Message>
+              {groupMessages(messages).map((group, groupIndex) => (
+                <MessageGroup key={groupIndex} isOwn={group.isOwn}>
+                  {group.messages.map((message, index) => (
+                    <Message
+                      key={message._id}
+                      isOwn={group.isOwn}
+                      style={{
+                        marginTop: index === 0 ? '0.5rem' : '0.25rem',
+                        marginBottom: index === group.messages.length - 1 ? '0.5rem' : '0.25rem'
+                      }}
+                    >
+                      <MessageContent>
+                        {message.content}
+                      </MessageContent>
+                      <MessageTime isOwn={group.isOwn}>
+                        {formatTime(message.createdAt)}
+                      </MessageTime>
+                    </Message>
+                  ))}
+                </MessageGroup>
               ))}
               <div ref={messagesEndRef} />
             </ChatMessages>
