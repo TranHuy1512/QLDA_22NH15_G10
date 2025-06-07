@@ -4,7 +4,7 @@ import axios from "axios";
 import BlurOverlay from "../components/BlurOverlay.jsx";
 import {ErrorMessage, FormContainer, FormWrapper, Input, Label, Title, Button, StyledLink} from "../components/FormComponents.jsx";
 import {Link} from "react-router-dom";
-
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 function ResetPassword() {
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -38,7 +38,7 @@ function ResetPassword() {
             return;
         }
         try {
-            const response = await axios.post('http://localhost:5000/api/reset-password', {
+            const response = await axios.post(API_URL + '/api/reset-password', {
                 token,
                 password
             });

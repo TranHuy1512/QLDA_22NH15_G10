@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { auth } = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/auth');
 const { body, validationResult } = require('express-validator');
 const {
   createTask,
@@ -14,7 +14,7 @@ const {
 } = require('../controllers/taskController');
 
 // Apply auth middleware to all routes
-router.use(auth);
+router.use(authMiddleware);
 
 // Create a new task
 router.post('/', createTask);

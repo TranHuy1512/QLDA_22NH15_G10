@@ -49,6 +49,7 @@ function App() {
                             <Route path="/board" element={<Dashboard />} />
                             <Route path="/teams" element={<Dashboard />} />
                             <Route path="/teams/:teamId" element={<Dashboard />} />
+                            <Route path="/messages" element={<Dashboard />} />
                             <Route path="/settings" element={<Dashboard />} />
                             <Route path="/profile" element={<Dashboard />} />
                         </Routes>
