@@ -27,6 +27,12 @@ const sidebarItems = [
         route: '/teams',
     },
     {
+        name: 'Messages',
+        id: 'messages',
+        icon: <span>💬</span>,
+        route: '/messages',
+    },
+    {
         name: 'Profile',
         id: 'profile',
         icon: <span>👤</span>,

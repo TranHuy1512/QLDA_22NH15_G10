@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Team = require("../models/Team");
 const GroupMember = require("../models/GroupMember");
-const { auth } = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/auth');
 const { body, validationResult } = require('express-validator');
 const {
   addTeamMember,
@@ -10,13 +10,10 @@ const {
   getTeamMembers
 } = require('../controllers/teamMemberController');
 
-// Apply auth middleware to all routes
-router.use(auth);
-
 // GET /api/teams - Get all teams the user is a member of
-router.get('/', async (req, res) => {
+router.get('/', authMiddleware, async (req, res) => {
   try {
-    const userId = req.user.userId; // Correctly get the logged-in user's ID from req.user.userId
+    const userId = req.user.userId;
     
     // Find all group memberships for the user
     const memberships = await GroupMember.find({ user: userId });
@@ -38,7 +35,6 @@ router.get('/', async (req, res) => {
       data: teamsWithMemberCount
     });
   } catch (error) {
-    console.error('Error fetching teams:', error);
     res.status(500).json({
       success: false,
       message: error.message
@@ -47,7 +43,7 @@ router.get('/', async (req, res) => {
 });
 
 // POST /api/teams - Create a new team
-router.post('/', [
+router.post('/', authMiddleware, [
   body('name').trim().notEmpty().withMessage('Team name is required'),
   body('description').optional().trim()
 ], async (req, res) => {
@@ -102,7 +98,6 @@ router.post('/', [
       data: team
     });
   } catch (error) {
-    console.error('Error creating team:', error);
     res.status(500).json({
       success: false,
       message: error.message || 'Failed to create team'
@@ -110,11 +105,10 @@ router.post('/', [
   }
 });
 
-// PATCH /api/teams/:id - Update a team's name or description (with validation)
-router.patch('/:id', async (req, res) => {
+// PATCH /api/teams/:id - Update a team's name or description
+router.patch('/:id', authMiddleware, async (req, res) => {
   try {
     const { name, description } = req.body;
-    // Only allow updating name and description
     const update = {};
     if (typeof name === 'string') update.name = name;
     if (typeof description === 'string') update.description = description;
@@ -136,7 +130,7 @@ router.patch('/:id', async (req, res) => {
 });
 
 // GET /api/teams/:id - Get a single team by ID
-router.get('/:id', async (req, res) => {
+router.get('/:id', authMiddleware, async (req, res) => {
   try {
     const team = await Team.findById(req.params.id);
     if (!team) {
@@ -149,7 +143,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // DELETE /api/teams/:id - Delete a team by ID
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', authMiddleware, async (req, res) => {
   try {
     const team = await Team.findByIdAndDelete(req.params.id);
     if (!team) {
@@ -162,11 +156,11 @@ router.delete('/:id', async (req, res) => {
 });
 
 // Team member management routes
-router.post('/:teamId/members', addTeamMember);
-router.delete('/:teamId/members/:userId', async (req, res) => {
+router.post('/:teamId/members', authMiddleware, addTeamMember);
+router.delete('/:teamId/members/:userId', authMiddleware, async (req, res) => {
   try {
     const { teamId, userId } = req.params;
-    const loggedInUserId = req.user.userId; // Get logged-in user's ID
+    const loggedInUserId = req.user.userId;
 
     // Check if the logged-in user is an admin of the team
     const adminMember = await GroupMember.findOne({ team: teamId, user: loggedInUserId, role: 'admin' });
@@ -196,22 +190,22 @@ router.delete('/:teamId/members/:userId', async (req, res) => {
       message: 'Member removed successfully'
     });
   } catch (error) {
-    console.error('Error removing member:', error);
     res.status(500).json({
       success: false,
       message: error.message || 'Failed to remove member'
     });
   }
 });
-router.get('/:teamId/members', getTeamMembers);
+
+router.get('/:teamId/members', authMiddleware, getTeamMembers);
 
 // PUT /api/teams/:teamId/members/:memberId/role - Update member role
-router.put('/:teamId/members/:memberId/role', async (req, res) => {
+router.put('/:teamId/members/:memberId/role', authMiddleware, async (req, res) => {
   try {
     const { teamId, memberId } = req.params;
     const { role } = req.body;
-    const loggedInUserId = req.user.userId; // Get logged-in user's ID
-    const allowedRoles = ['member', 'admin', 'guest']; // Define allowed roles
+    const loggedInUserId = req.user.userId;
+    const allowedRoles = ['member', 'admin', 'guest'];
 
     // Check if the logged-in user is an admin of the team
     const adminMember = await GroupMember.findOne({ team: teamId, user: loggedInUserId, role: 'admin' });
@@ -233,10 +227,10 @@ router.put('/:teamId/members/:memberId/role', async (req, res) => {
 
     // Find the group member and update their role
     const updatedMember = await GroupMember.findOneAndUpdate(
-      { team: teamId, user: memberId }, // Find member by team and user ID
-      { role: role }, // Update the role
-      { new: true } // Return the updated document
-    ).populate('user', 'name email'); // Optionally populate user info for response
+      { team: teamId, user: memberId },
+      { role: role },
+      { new: true }
+    ).populate('user', 'name email');
 
     if (!updatedMember) {
       return res.status(404).json({
@@ -252,7 +246,6 @@ router.put('/:teamId/members/:memberId/role', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error updating member role:', error);
     res.status(500).json({
       success: false,
       message: error.message || 'Failed to update member role'

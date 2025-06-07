@@ -9,6 +9,7 @@ import TeamManagement from './TeamManagement';
 import axiosInstance from '../utils/axios';
 import { useLocation, useNavigate } from 'react-router-dom';
 import GanttChart from './GanttChart';
+import MessagesPage from './MessagesPage';
 
 const Dashboard = () => {
   const { user, logout } = useAuth();
@@ -84,7 +85,7 @@ const Dashboard = () => {
       const teamIdFromUrl = location.pathname.split('/')[2];
       setActiveItem(`team-${teamIdFromUrl}`);
     } else if (location.pathname === '/dashboard') {
-       setActiveItem('tasks');
+      setActiveItem('tasks');
     } else if (location.pathname === '/settings') {
       setActiveItem('settings');
     } else if (location.pathname === '/teams') {
@@ -95,6 +96,8 @@ const Dashboard = () => {
       setActiveItem('profile');
     } else if (location.pathname === '/gantt') {
       setActiveItem('gantt');
+    } else if (location.pathname === '/messages') {
+      setActiveItem('messages');
     }
   }, [location.pathname]);
   // Fetch all users when the modal is shown for creating a new team
@@ -250,6 +253,8 @@ const Dashboard = () => {
                 deleting={deleting}
             />
         );
+      case 'messages':
+        return <MessagesPage />;
       case 'settings':
         return (
           <div style={{ color: 'white' }}>
