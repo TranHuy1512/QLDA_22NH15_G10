@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from '../utils/axios';
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 
 // Sample data for groups, replace with your actual data
 const groups = [
@@ -28,6 +29,7 @@ const getTaskColor = (index) => {
 
 const GanttChart = () => {
   const [selectedMember, setSelectedMember] = useState('');
+  const [selectedTeam, setSelectedTeam] = useState('all');
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [tasks, setTasks] = useState([]);
@@ -95,6 +97,49 @@ const GanttChart = () => {
     fetchTeams();
   }, []);
 
+  // Calculate task statistics
+  const calculateTaskStats = () => {
+    const filteredTasks = tasks.filter(task => {
+      const teamMatch = selectedTeam === 'all' || task.team?._id === selectedTeam;
+      const memberMatch = !selectedMember || 
+        (task.assignees && task.assignees.some(aid =>
+          (typeof aid === 'string' && aid === selectedMember) ||
+          (typeof aid === 'object' && (aid._id === selectedMember))
+        ));
+      return teamMatch && memberMatch;
+    });
+
+    const totalTasks = filteredTasks.length;
+    if (totalTasks === 0) return [];
+
+    const stats = [
+      { name: 'To Do', value: 0, color: '#FF6B6B' },
+      { name: 'In Progress', value: 0, color: '#4ECDC4' },
+      { name: 'Completed', value: 0, color: '#00B894' }
+    ];
+
+    filteredTasks.forEach(task => {
+      switch (task.status) {
+        case 'todo':
+          stats[0].value++;
+          break;
+        case 'in-progress':
+          stats[1].value++;
+          break;
+        case 'completed':
+          stats[2].value++;
+          break;
+      }
+    });
+
+    return stats.map(stat => ({
+      ...stat,
+      percentage: ((stat.value / totalTasks) * 100).toFixed(1)
+    }));
+  };
+
+  const taskStats = calculateTaskStats();
+
   return (
     <div style={{ padding: '24px', backgroundColor: '#1F2937', minHeight: '100vh' }}>
       <div style={{ 
@@ -117,32 +162,36 @@ const GanttChart = () => {
           }}>
             Select Team
           </label>
-          <select style={{
-            width: '100%',
-            padding: '8px 12px',
-            borderRadius: '8px',
-            border: '1px solid #4B5563',
-            backgroundColor: '#1F2937',
-            color: '#fff',
-            fontSize: '13px',
-            cursor: 'pointer',
-            outline: 'none',
-            transition: 'all 0.2s',
-            appearance: 'none',
-            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%239CA3AF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
-            backgroundRepeat: 'no-repeat',
-            backgroundPosition: 'right 8px center',
-            backgroundSize: '14px',
-            '&:hover': {
-              borderColor: '#6366F1',
-              backgroundColor: '#2D3748',
-            },
-            '&:focus': {
-              borderColor: '#6366F1',
-              boxShadow: '0 0 0 2px rgba(99, 102, 241, 0.2)',
-            }
-          }}>
-            <option value="">All Teams</option>
+          <select 
+            value={selectedTeam}
+            onChange={(e) => setSelectedTeam(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '8px 12px',
+              borderRadius: '8px',
+              border: '1px solid #4B5563',
+              backgroundColor: '#1F2937',
+              color: '#fff',
+              fontSize: '13px',
+              cursor: 'pointer',
+              outline: 'none',
+              transition: 'all 0.2s',
+              appearance: 'none',
+              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%239CA3AF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
+              backgroundRepeat: 'no-repeat',
+              backgroundPosition: 'right 8px center',
+              backgroundSize: '14px',
+              '&:hover': {
+                borderColor: '#6366F1',
+                backgroundColor: '#2D3748',
+              },
+              '&:focus': {
+                borderColor: '#6366F1',
+                boxShadow: '0 0 0 2px rgba(99, 102, 241, 0.2)',
+              }
+            }}
+          >
+            <option value="all">All Teams</option>
             {teams.map(t => <option key={t._id} value={t._id}>{t.name}</option>)}
           </select>
         </div>
@@ -193,6 +242,77 @@ const GanttChart = () => {
         </div>
       </div>
 
+      {/* Task Statistics Pie Chart */}
+      <div style={{ 
+        backgroundColor: '#374151', 
+        borderRadius: '12px', 
+        padding: '24px',
+        marginBottom: '24px',
+        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+      }}>
+        <h2 style={{ color: '#fff', fontSize: '1.25rem', marginBottom: '1rem' }}>Task Statistics</h2>
+        <div style={{ height: '300px', width: '100%' }}>
+          {loadingTasks ? (
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'center', 
+              alignItems: 'center', 
+              height: '100%',
+              color: '#9CA3AF',
+              fontSize: '16px'
+            }}>
+              Loading statistics...
+            </div>
+          ) : taskStats.length === 0 ? (
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'center', 
+              alignItems: 'center', 
+              height: '100%',
+              color: '#9CA3AF',
+              fontSize: '16px'
+            }}>
+              No tasks available for statistics
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={taskStats}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  outerRadius={100}
+                  fill="#8884d8"
+                  dataKey="value"
+                  label={({ name, percentage }) => `${name}: ${percentage}%`}
+                >
+                  {taskStats.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip 
+                  formatter={(value, name, props) => [`${value} tasks (${props.payload.percentage}%)`, name]}
+                  contentStyle={{
+                    backgroundColor: '#1F2937',
+                    border: '1px solid #4B5563',
+                    borderRadius: '8px',
+                    color: '#fff'
+                  }}
+                />
+                <Legend 
+                  verticalAlign="bottom" 
+                  height={36}
+                  formatter={(value) => (
+                    <span style={{ color: '#fff' }}>{value}</span>
+                  )}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+      </div>
+
       {/* Gantt Chart Visualization */}
       <div style={{ 
         overflowX: 'auto', 
@@ -232,15 +352,17 @@ const GanttChart = () => {
           <div style={{ minWidth: 600 }}>
             {/* Calculate min/max dates */}
             {(() => {
-              // Filter tasks by member if selected
+              // Filter tasks by team and member if selected
               const filteredTasks = tasks.filter(task => {
-                if (!selectedMember) return true;
-                if (!task.assignees) return false;
-                return task.assignees.some(aid =>
-                  (typeof aid === 'string' && aid === selectedMember) ||
-                  (typeof aid === 'object' && (aid._id === selectedMember))
-                );
+                const teamMatch = selectedTeam === 'all' || task.team?._id === selectedTeam;
+                const memberMatch = !selectedMember || 
+                  (task.assignees && task.assignees.some(aid =>
+                    (typeof aid === 'string' && aid === selectedMember) ||
+                    (typeof aid === 'object' && (aid._id === selectedMember))
+                  ));
+                return teamMatch && memberMatch;
               });
+
               if (filteredTasks.length === 0) return (
                 <div style={{ 
                   display: 'flex', 
@@ -250,7 +372,7 @@ const GanttChart = () => {
                   color: '#9CA3AF',
                   fontSize: '16px'
                 }}>
-                  No tasks for this member.
+                  No tasks found.
                 </div>
               );
 

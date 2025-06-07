@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import axiosInstance from '../../utils/axios';
-import { useAuth } from '../../context/authContext';
 
 const FormCreateTask = ({ onClose, onSubmit, initialData }) => {
   const [formData, setFormData] = useState({
@@ -9,21 +8,22 @@ const FormCreateTask = ({ onClose, onSubmit, initialData }) => {
     status: 'todo',
     priority: 'medium',
     assignees: [],
-    dueDate: ''
+    dueDate: '',
+    teamId: ''
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [users, setUsers] = useState([]);
-  const [loadingUsers, setLoadingUsers] = useState(true);
   const [comments, setComments] = useState([]);
   const [newCommentContent, setNewCommentContent] = useState('');
   const [loadingComments, setLoadingComments] = useState(false);
   const [postingComment, setPostingComment] = useState(false);
-
-  const { user } = useAuth();
+  const [teams, setTeams] = useState([]);
+  const [loadingTeams, setLoadingTeams] = useState(true);
+  const [teamMembers, setTeamMembers] = useState([]);
+  const [loadingTeamMembers, setLoadingTeamMembers] = useState(false);
 
   useEffect(() => {
-    fetchUsers();
+    fetchTeams();
   }, []);
 
   useEffect(() => {
@@ -38,26 +38,47 @@ const FormCreateTask = ({ onClose, onSubmit, initialData }) => {
         status: initialData.status || 'todo',
         priority: initialData.priority || 'medium',
         assignees: assigneeIds,
-        dueDate: initialData.dueDate ? new Date(initialData.dueDate).toISOString().slice(0, 16) : ''
+        dueDate: initialData.dueDate ? new Date(initialData.dueDate).toISOString().slice(0, 16) : '',
+        teamId: initialData.team?._id || ''
       });
       fetchComments(initialData._id);
+      if (initialData.team?._id) {
+        fetchTeamMembers(initialData.team._id);
+      }
     }
   }, [initialData]);
 
-  const fetchUsers = async () => {
+  const fetchTeamMembers = async (teamId) => {
     try {
-      setLoadingUsers(true);
-      const response = await axiosInstance.get('/api/users');
+      setLoadingTeamMembers(true);
+      const response = await axiosInstance.get(`/api/teams/${teamId}/members`);
       if (response.data.success) {
-        setUsers(response.data.data);
+        setTeamMembers(response.data.data);
       } else {
-        setError('Failed to fetch users');
+        setError('Failed to fetch team members');
       }
     } catch (error) {
-      console.error('Error fetching users:', error);
-      setError('Failed to fetch users');
+      console.error('Error fetching team members:', error);
+      setError('Failed to fetch team members');
     } finally {
-      setLoadingUsers(false);
+      setLoadingTeamMembers(false);
+    }
+  };
+
+  const fetchTeams = async () => {
+    try {
+      setLoadingTeams(true);
+      const response = await axiosInstance.get('/api/teams');
+      if (response.data.success) {
+        setTeams(response.data.data);
+      } else {
+        setError('Failed to fetch teams');
+      }
+    } catch (error) {
+      console.error('Error fetching teams:', error);
+      setError('Failed to fetch teams');
+    } finally {
+      setLoadingTeams(false);
     }
   };
 
@@ -104,7 +125,20 @@ const FormCreateTask = ({ onClose, onSubmit, initialData }) => {
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
 
-    if (name === 'assignees' && type === 'checkbox') {
+    if (name === 'teamId') {
+      if (initialData) return;
+      
+      setFormData(prev => ({
+        ...prev,
+        [name]: value,
+        assignees: [] // Reset assignees when team changes
+      }));
+      if (value) {
+        fetchTeamMembers(value);
+      } else {
+        setTeamMembers([]);
+      }
+    } else if (name === 'assignees' && type === 'checkbox') {
       const userId = value;
       setFormData(prev => ({
         ...prev,
@@ -132,17 +166,29 @@ const FormCreateTask = ({ onClose, onSubmit, initialData }) => {
     setLoading(true);
 
     try {
+      const taskData = {
+        ...formData,
+        team: formData.teamId
+      };
+      delete taskData.teamId;
+
       let response;
       
       if (initialData) {
-        response = await axiosInstance.put(`/api/tasks/${initialData._id}`, formData);
+        response = await axiosInstance.put(`/api/tasks/${initialData._id}`, taskData);
       } else {
-        response = await axiosInstance.post('/api/tasks', formData);
+        response = await axiosInstance.post('/api/tasks', taskData);
       }
       
       if (response.data.success) {
-        onSubmit(response.data.data);
-        onClose();
+        // Fetch the complete task data with populated fields
+        const completeTaskResponse = await axiosInstance.get(`/api/tasks/${response.data.data._id}`);
+        if (completeTaskResponse.data.success) {
+          onSubmit(completeTaskResponse.data.data);
+          onClose();
+        } else {
+          setError('Failed to fetch complete task data');
+        }
       } else {
         setError(response.data.message || `Failed to ${initialData ? 'update' : 'create'} task`);
       }
@@ -157,32 +203,6 @@ const FormCreateTask = ({ onClose, onSubmit, initialData }) => {
       }
     } finally {
       setLoading(false);
-    }
-  };
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'completed':
-        return '#10B981';
-      case 'in-progress':
-        return '#F59E0B';
-      case 'pending':
-        return '#6B7280';
-      default:
-        return '#6B7280';
-    }
-  };
-
-  const getPriorityColor = (priority) => {
-    switch (priority) {
-      case 'high':
-        return '#EF4444';
-      case 'medium':
-        return '#F59E0B';
-      case 'low':
-        return '#10B981';
-      default:
-        return '#6B7280';
     }
   };
 
@@ -231,34 +251,6 @@ const FormCreateTask = ({ onClose, onSubmit, initialData }) => {
       backgroundColor: '#1E3A8A',
       cursor: 'not-allowed'
     }
-  };
-
-  const checkboxListStyles = {
-    maxHeight: '150px',
-    overflowY: 'auto',
-    backgroundColor: '#374151',
-    border: '1px solid #4B5563',
-    borderRadius: '0.375rem',
-    padding: '0.5rem'
-  };
-
-  const checkboxItemStyles = {
-    display: 'flex',
-    alignItems: 'center',
-    padding: '0.5rem',
-    cursor: 'pointer',
-    borderRadius: '0.25rem',
-    transition: 'background-color 0.2s',
-    ':hover': {
-      backgroundColor: '#4B5563'
-    }
-  };
-
-  const checkboxStyles = {
-    marginRight: '0.75rem',
-    width: '1rem',
-    height: '1rem',
-    cursor: 'pointer'
   };
 
   return (
@@ -318,6 +310,38 @@ const FormCreateTask = ({ onClose, onSubmit, initialData }) => {
         <div>
           <form onSubmit={handleSubmit}>
             <div style={{ marginBottom: '1.5rem' }}>
+              <label style={commonLabelStyles}>Team</label>
+              <select
+                name="teamId"
+                value={formData.teamId}
+                onChange={handleChange}
+                style={{
+                  ...commonInputStyles,
+                  backgroundColor: initialData ? '#2D3748' : '#374151',
+                  cursor: initialData ? 'not-allowed' : 'pointer'
+                }}
+                required
+                disabled={!!initialData}
+              >
+                <option value="">Select a team</option>
+                {loadingTeams ? (
+                  <option value="" disabled>Loading teams...</option>
+                ) : (
+                  teams.map(team => (
+                    <option key={team._id} value={team._id}>
+                      {team.name}
+                    </option>
+                  ))
+                )}
+              </select>
+              {initialData && (
+                <small style={{ color: '#9CA3AF', marginTop: '0.25rem', display: 'block' }}>
+                  Team cannot be changed after task creation
+                </small>
+              )}
+            </div>
+
+            <div style={{ marginBottom: '1.5rem' }}>
               <label style={commonLabelStyles}>Title</label>
               <input
                 type="text"
@@ -352,9 +376,8 @@ const FormCreateTask = ({ onClose, onSubmit, initialData }) => {
                 name="status"
                 value={formData.status}
                 onChange={handleChange}
-                style={{
-                  ...commonInputStyles,
-                }}
+                style={commonInputStyles}
+                required
               >
                 <option value="todo">To Do</option>
                 <option value="in-progress">In Progress</option>
@@ -368,9 +391,8 @@ const FormCreateTask = ({ onClose, onSubmit, initialData }) => {
                 name="priority"
                 value={formData.priority}
                 onChange={handleChange}
-                style={{
-                   ...commonInputStyles,
-                }}
+                style={commonInputStyles}
+                required
               >
                 <option value="low">Low</option>
                 <option value="medium">Medium</option>
@@ -380,37 +402,46 @@ const FormCreateTask = ({ onClose, onSubmit, initialData }) => {
 
             <div style={{ marginBottom: '1.5rem' }}>
               <label style={commonLabelStyles}>Assignees</label>
-               {loadingUsers ? (
-                  <p style={{color: '#9CA3AF'}}>Loading users...</p>
+              <select
+                name="assignees"
+                value={formData.assignees}
+                onChange={handleChange}
+                style={{
+                  ...commonInputStyles,
+                  height: '120px'
+                }}
+                multiple
+                required
+                disabled={!formData.teamId || loadingTeamMembers}
+              >
+                {!formData.teamId ? (
+                  <option value="" disabled>Please select a team first</option>
+                ) : loadingTeamMembers ? (
+                  <option value="" disabled>Loading team members...</option>
+                ) : teamMembers.length === 0 ? (
+                  <option value="" disabled>No members in this team</option>
                 ) : (
-               <div style={checkboxListStyles}>
-                  {users.map(user => (
-                    <label key={user._id} style={checkboxItemStyles}>
-                      <input
-                        type="checkbox"
-                        name="assignees"
-                        value={user._id}
-                        checked={formData.assignees.includes(user._id)}
-                        onChange={handleChange}
-                        style={checkboxStyles}
-                      />
-                      <span style={{ color: 'white' }}>
-                        {user.name} ({user.email})
-                      </span>
-                    </label>
-                  ))}
-                </div>
+                  teamMembers.map(member => (
+                    <option key={member.user._id} value={member.user._id}>
+                      {member.user.name || member.user.email}
+                    </option>
+                  ))
                 )}
+              </select>
+              <small style={{ color: '#9CA3AF', marginTop: '0.25rem', display: 'block' }}>
+                Hold Ctrl/Cmd to select multiple users
+              </small>
             </div>
 
-             <div style={{ marginBottom: '1.5rem' }}>
+            <div style={{ marginBottom: '1.5rem' }}>
               <label style={commonLabelStyles}>Due Date</label>
               <input
                 type="datetime-local"
                 name="dueDate"
                 value={formData.dueDate}
                 onChange={handleChange}
-                 style={commonInputStyles}
+                style={commonInputStyles}
+                required
               />
             </div>
 
@@ -437,7 +468,7 @@ const FormCreateTask = ({ onClose, onSubmit, initialData }) => {
               </button>
               <button
                 type="submit"
-                disabled={loading || loadingUsers}
+                disabled={loading || loadingTeamMembers}
                 style={{
                   backgroundColor: '#3B82F6',
                   color: 'white',
