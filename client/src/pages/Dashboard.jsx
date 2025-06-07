@@ -8,6 +8,7 @@ import ProfilePage from './ProfilePage';
 import TeamManagement from './TeamManagement';
 import axiosInstance from '../utils/axios';
 import { useLocation, useNavigate } from 'react-router-dom';
+import GanttChart from './GanttChart';
 import MessagesPage from './MessagesPage';
 
 const Dashboard = () => {
@@ -93,6 +94,8 @@ const Dashboard = () => {
       setActiveItem('board');
     } else if (location.pathname === '/profile') {
       setActiveItem('profile');
+    } else if (location.pathname === '/gantt') {
+      setActiveItem('gantt');
     } else if (location.pathname === '/messages') {
       setActiveItem('messages');
     }
@@ -281,6 +284,8 @@ const Dashboard = () => {
         );
       case 'profile':
         return <ProfilePage />;
+      case 'gantt':
+        return <GanttChart />;
       default:
         if (activeItem.startsWith('team-')) {
            const teamIdFromActiveItem = activeItem.replace('team-', '');
