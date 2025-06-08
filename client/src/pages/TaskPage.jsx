@@ -140,7 +140,7 @@ const TaskPage = () => {
     };
 
     const filteredTasks = tasks.filter(task => {
-      const teamMatch = selectedTeam === 'all' || task.team?._id === selectedTeam;
+      const teamMatch = !selectedTeam || task.team?._id === selectedTeam;
       const assigneeMatch = selectedAssignee === 'all' || 
         (selectedAssignee === 'myself' && task.assignees?.some(assignee => assignee._id === user?._id));
       return teamMatch && assigneeMatch;
@@ -190,15 +190,16 @@ const TaskPage = () => {
                   fontSize: '1rem'
                 }}
               >
-                <option value="all">All Teams</option>
                 {loadingTeams ? (
                   <option value="" disabled>Loading teams...</option>
-                ) : (
+                ) : teams.length > 0 ? (
                   teams.map(team => (
                     <option key={team._id} value={team._id}>
                       {team.name}
                     </option>
                   ))
+                ) : (
+                  <option value="" disabled>No teams available</option>
                 )}
               </select>
               <select

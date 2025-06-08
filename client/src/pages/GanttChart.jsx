@@ -162,37 +162,34 @@ const GanttChart = () => {
           }}>
             Select Team
           </label>
-          <select 
+          <select
             value={selectedTeam}
             onChange={(e) => setSelectedTeam(e.target.value)}
             style={{
-              width: '100%',
-              padding: '8px 12px',
-              borderRadius: '8px',
-              border: '1px solid #4B5563',
-              backgroundColor: '#1F2937',
-              color: '#fff',
-              fontSize: '13px',
+              height: '43px',
+              minWidth: '110px',
+              backgroundColor: 'white',
+              color: 'black',
+              border: 'none',
+              borderRadius: '0.375rem',
+              padding: '0.5rem 1rem',
               cursor: 'pointer',
               outline: 'none',
-              transition: 'all 0.2s',
-              appearance: 'none',
-              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%239CA3AF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
-              backgroundRepeat: 'no-repeat',
-              backgroundPosition: 'right 8px center',
-              backgroundSize: '14px',
-              '&:hover': {
-                borderColor: '#6366F1',
-                backgroundColor: '#2D3748',
-              },
-              '&:focus': {
-                borderColor: '#6366F1',
-                boxShadow: '0 0 0 2px rgba(99, 102, 241, 0.2)',
-              }
+              marginTop: '12px',
+              fontSize: '1rem'
             }}
           >
-            <option value="all">All Teams</option>
-            {teams.map(t => <option key={t._id} value={t._id}>{t.name}</option>)}
+            {loadingTeams ? (
+              <option value="" disabled>Loading teams...</option>
+            ) : teams.length > 0 ? (
+              teams.map(team => (
+                <option key={team._id} value={team._id}>
+                  {team.name}
+                </option>
+              ))
+            ) : (
+              <option value="" disabled>No teams available</option>
+            )}
           </select>
         </div>
 
@@ -354,7 +351,7 @@ const GanttChart = () => {
             {(() => {
               // Filter tasks by team and member if selected
               const filteredTasks = tasks.filter(task => {
-                const teamMatch = selectedTeam === 'all' || task.team?._id === selectedTeam;
+                const teamMatch = !selectedTeam || task.team?._id === selectedTeam;
                 const memberMatch = !selectedMember || 
                   (task.assignees && task.assignees.some(aid =>
                     (typeof aid === 'string' && aid === selectedMember) ||
