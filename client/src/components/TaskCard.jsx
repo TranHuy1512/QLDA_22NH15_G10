@@ -74,6 +74,7 @@ const TaskCard = ({ task, onStatusChange, onEdit, onDelete }) => {
             }}
             style={{
               width: 'auto',
+              minWidth: '120px',
               height: '1.75rem',
               padding: '0 1rem',
               borderRadius: '9999px',
@@ -85,6 +86,7 @@ const TaskCard = ({ task, onStatusChange, onEdit, onDelete }) => {
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
+              justifyContent: 'center',
               gap: '0.5rem',
               transition: 'box-shadow 0.2s',
             }}
@@ -203,59 +205,86 @@ const TaskCard = ({ task, onStatusChange, onEdit, onDelete }) => {
 
       <div style={{
         display: 'flex',
-        gap: '1rem',
-        flexWrap: 'wrap',
-        alignItems: 'center'
+        flexDirection: 'column',
+        gap: '0.75rem'
       }}>
-        <span style={{
-          backgroundColor: getPriorityColor(task.priority),
-          padding: '0.25rem 0.75rem',
-          borderRadius: '9999px',
-          fontSize: '0.75rem',
-          fontWeight: '500',
-          color: 'white'
-        }}>
-          {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)} Priority
-        </span>
-
-        {task.dueDate && (
-          <span style={{
-            color: '#9CA3AF',
-            fontSize: '0.875rem'
-          }}>
-            {formatDueDate(task.dueDate)}
-          </span>
-        )}
-
-        {task.assignees && task.assignees.length > 0 && (
+        {task.team && (
           <div style={{
             display: 'flex',
-            flexWrap: 'wrap',
-            gap: '0.5rem',
-            alignItems: 'center'
+            alignItems: 'center',
+            gap: '0.5rem'
           }}>
             <span style={{
               color: '#9CA3AF',
               fontSize: '0.875rem'
             }}>
-              Assigned to:
+              Team:
             </span>
-            {task.assignees.map(assignee => (
-              <span
-                key={assignee._id}
-                style={{
-                  backgroundColor: '#374151',
-                  padding: '0.25rem 0.75rem',
-                  borderRadius: '9999px',
-                  fontSize: '0.75rem',
-                  color: 'white'
-                }}
-              >
-                {assignee.name}
-              </span>
-            ))}
+            <span style={{
+              color: 'white',
+              fontSize: '0.875rem'
+            }}>
+              {task.team.name}
+            </span>
           </div>
         )}
+
+        <div style={{
+          display: 'flex',
+          gap: '1rem',
+          flexWrap: 'wrap',
+          alignItems: 'center'
+        }}>
+          <span style={{
+            backgroundColor: getPriorityColor(task.priority),
+            padding: '0.25rem 0.75rem',
+            borderRadius: '9999px',
+            fontSize: '0.75rem',
+            fontWeight: '500',
+            color: 'white'
+          }}>
+            {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)} Priority
+          </span>
+
+          {task.dueDate && (
+            <span style={{
+              color: '#9CA3AF',
+              fontSize: '0.875rem'
+            }}>
+              {formatDueDate(task.dueDate)}
+            </span>
+          )}
+
+          {task.assignees && task.assignees.length > 0 && (
+            <div style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: '0.5rem',
+              alignItems: 'center'
+            }}>
+              <span style={{
+                color: '#9CA3AF',
+                fontSize: '0.875rem'
+              }}>
+                Assigned to:
+              </span>
+              {task.assignees.map(assignee => (
+                <span
+                  key={assignee._id}
+                  style={{
+                    backgroundColor: '#374151',
+                    padding: '0.25rem 0.75rem',
+                    borderRadius: '9999px',
+                    fontSize: '0.75rem',
+                    color: 'white'
+                  }}
+                >
+                  {assignee.name || assignee.email}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
